@@ -1,0 +1,24 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual environments
+venv/
+.env
+
+# OS / Editor files
+.DS_Store
+.idea/
+.vscode/
+
+# Database
+*.db
+*.sqlite3
+
+# Logs
+*.log
+
+# Docker build cache
+**/Dockerfile
+**/.dockerignore

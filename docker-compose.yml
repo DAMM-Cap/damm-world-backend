@@ -1,0 +1,42 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    container_name: damm_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: lagoon
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  damm-api:
+    build: ./damm-world-api
+    container_name: damm_world_api
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/lagoon
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./damm-world-api:/app
+    depends_on:
+      - db
+
+  indexer:
+    build: ./lagoon-indexer
+    container_name: lagoon_indexer
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/lagoon
+    volumes:
+      - ./lagoon-indexer:/app
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:

@@ -1,6 +1,6 @@
-# damm-world-api
+# lagoon-indexer
 
-This is the **FastAPI backend** for the Damm World project. It exposes a REST API to serve indexed data stored in PostgreSQL.
+This is the **indexer service** for the Damm World project. It listens to blockchain events and writes the data to PostgreSQL.
 
 ---
 
@@ -14,11 +14,9 @@ source venv/bin/activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Run the FastAPI app
-uvicorn app.main:app --reload
+# Run the indexer script
+python indexer.py
 ```
-
-API available at [http://localhost:8000/docs](http://localhost:8000/docs).
 
 ---
 
@@ -44,7 +42,7 @@ docker-compose up --build
 
 ## 🔁 Live Reload (Development)
 
-This API uses Uvicorn’s `--reload` feature to automatically reload when Python files change.
+The indexer uses `watchmedo` to automatically restart when Python files change.
 
 ---
 

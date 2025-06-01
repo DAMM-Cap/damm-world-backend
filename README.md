@@ -5,7 +5,7 @@ This repository contains the complete backend stack for the **Damm World** proje
 - **damm-world-api**: FastAPI app serving indexed data to the frontend.
 - **lagoon-indexer**: Worker service that reads blockchain events and writes to PostgreSQL.
 - **PostgreSQL**: Shared database used by both services.
-- **docker-compose.yml**: Orchestrates all services for local development or production deployment.
+- **docker-compose.yml**: Orchestrates all services for local development and deployment.
 
 ---
 
@@ -51,13 +51,13 @@ docker-compose down
 
 - **Build context**: `damm-world-api/`
 - **Port**: `8000`
-  - Accessible at [http://localhost:8000/docs](http://localhost:8000/docs) (Swagger UI)
+  - Accessible at [http://localhost:8000/docs](http://localhost:8000/docs) (Swagger UI).
 - **Reads data**: from the shared PostgreSQL database.
 
 ### 3️⃣ lagoon-indexer
 
 - **Build context**: `lagoon-indexer/`
-- **No exposed port** (runs as a background service)
+- **No exposed port** (runs as a background service).
 - **Writes data**: to the shared PostgreSQL database.
 
 ---

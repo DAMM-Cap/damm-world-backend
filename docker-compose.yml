@@ -35,6 +35,7 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/lagoon
     volumes:
       - ./lagoon-indexer:/app
+      - ./damm-world-api/app/constants/abi:/app/abi
     depends_on:
       - db
 

@@ -19,6 +19,5 @@ venv/
 # Logs
 *.log
 
-# Docker build cache
-**/Dockerfile
+# Docker build cache (but not Dockerfile!)
 **/.dockerignore

@@ -1,36 +1,23 @@
-from web3 import Web3
-from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
-
 import os
+import sys
 import argparse
-from lagoon_indexer import LagoonIndexer
 import time
+import traceback
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from lagoon_indexer import LagoonIndexer
 from constants.abi.lagoon import LAGOON_ABI
-
-""" 
-load_dotenv()
-
-DATABASE_URL = os.getenv("DATABASE_URL")
-engine = create_engine(DATABASE_URL)
-
-def main():
-    print("Indexer is starting...")
-    with engine.connect() as conn:
-        result = conn.execute(text("SELECT now()"))
-        print(f"Database time: {result.fetchone()[0]}")
-
- """
 
 def main():
     load_dotenv()
+
     parser = argparse.ArgumentParser(description='Lagoon Indexer')
     parser.add_argument('chain_id', type=int, help='Chain ID')
     parser.add_argument('sleep_time', type=int, help='Sleep time between iterations')
     parser.add_argument('range', type=int, help='Block range to process')
-    parser.add_argument('real_time', type=int, help='Whether to run in real-time mode')
+    parser.add_argument('real_time', type=int, help='Whether to run in real-time mode (1) or one-shot (0)')
     parser.add_argument('run_time', type=int, help='Run time in seconds')
-
 
     args = parser.parse_args()
     real_time = bool(args.real_time)
@@ -45,15 +32,21 @@ def main():
         event_names=events_to_track,
         real_time=real_time,
     )
-    #there are two ways to break the loop in different places because we need to verify the runtime BEFORE
+
     start_time = time.time()
-    
+    print("Lagoon Indexer is starting...")
+
     while time.time() - start_time < args.run_time:
-        if indexer.fetcher_loop() == 1:
-            break
+        try:
+            if indexer.fetcher_loop() == 1:
+                break
+        except Exception as e:
+            print(f"Error in indexer loop: {e}")
+            traceback.print_exc()
+            print(f"Sleeping {args.sleep_time} seconds before retrying...")
+            time.sleep(args.sleep_time)
 
-    print(f"Indexer stopped after {time.time() - start_time} seconds")
-
+    print(f"Indexer stopped after {time.time() - start_time:.2f} seconds.")
 
 if __name__ == "__main__":
     main()

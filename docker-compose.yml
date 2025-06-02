@@ -5,40 +5,32 @@ services:
     image: postgres:15
     container_name: damm_postgres
     restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: lagoon
+    env_file:
+      - .env
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
-
-  damm-api:
-    build: ./damm-world-api
-    container_name: damm_world_api
-    restart: always
-    environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/lagoon
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./damm-world-api:/app
-    depends_on:
-      - db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   indexer:
     build: ./lagoon-indexer
     container_name: lagoon_indexer
     restart: always
-    environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/lagoon
+    env_file:
+      - .env
     volumes:
       - ./lagoon-indexer:/app
       - ./damm-world-api/app/constants:/app/constants
     depends_on:
-      - db
-    command: ["python", "indexer.py", "480", "10", "2000", "1", "60"]
+      db:
+        condition: service_healthy
+    #command: ["python", "indexer.py", "480", "10", "2000", "1", "60"] ## Run on Worldchain
+    command: ["python", "indexer.py", "31337", "10", "2000", "1", "60"] ## Run on Anvil local fork
 
 volumes:
   postgres_data:

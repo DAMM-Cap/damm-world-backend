@@ -1,21 +1,19 @@
 from dotenv import load_dotenv
 import os
-from web3 import Web3
-from datetime import datetime, timezone
-import time
-import pandas as pd
-from typing import List, Dict, Tuple, Optional
 import sys
+import time
 import traceback
-import json
+import pandas as pd
+from typing import List, Dict
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from db.db import Database, getEnvDb
-from core.blockchain import getEnvNode, Blockchain
 from db.query.insertLagoonEvents import insert_lagoon_events
+from core.blockchain import getEnvNode
 from core.lagoon_deployments import get_lagoon_deployments
 from db.lagoon_db_utils import LagoonDbUtils
 
-#Class to format events
+# Event Formatter
 class EventFormatter:
     @staticmethod
     def _common_fields(event: Dict, chain_id: int, lagoon_address: str) -> Dict:
@@ -62,22 +60,19 @@ class EventFormatter:
         })
         return data
 
-#Class to process and store events
+# Event Processor
 class EventProcessor:
     def __init__(self, db: Database, chain_id: int, lagoon_address: str):
         self.db = db
         self.chain_id = chain_id
         self.lagoon_address = lagoon_address
         self.EVENT_TABLES = {
-            'SettleDeposit': 'lagoon_SettleDeposit',
-            'SettleRedeem': 'lagoon_SettleRedeem',
-            'DepositRequestCanceled': 'lagoon_DepositRequestCanceled'
+            'SettleDeposit': 'lagoon_settledeposit',
+            'SettleRedeem': 'lagoon_settleredeem',
+            'DepositRequestCanceled': 'lagoon_depositrequestcanceled'
         }
 
     def save_to_db_batch(self, event_name: str, event_data_list: List[Dict]):
-        """
-        Saves a batch of events to the database.
-        """
         if not event_data_list:
             return
         df = pd.DataFrame(event_data_list)
@@ -107,15 +102,9 @@ class EventProcessor:
         ]
         self.save_to_db_batch('DepositRequestCanceled', event_data_list)
 
+# Lagoon Indexer
 class LagoonIndexer:
-    def __init__(self, 
-                 lagoon_abi: list, 
-                 chain_id: int, 
-                 sleep_time: int, 
-                 range: int, 
-                 event_names: list, 
-                 real_time: bool = True):
-        
+    def __init__(self, lagoon_abi: list, chain_id: int, sleep_time: int, range: int, event_names: list, real_time: bool = True):
         lagoon_deployments = get_lagoon_deployments(chain_id)
         self.first_lagoon_block = lagoon_deployments['genesis_block_lagoon']
         self.lagoon = lagoon_deployments['lagoon_address']

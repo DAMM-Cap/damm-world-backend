@@ -21,17 +21,18 @@ class Database:
     def queryResponse(self, query, params=None, raw=False, commit=False):
         cursor = self.connection.cursor()
         try:
-            cursor.execute(query, params)
+            if params:
+                cursor.execute(query, params)
+            else:
+                cursor.execute(query)
         except Exception as e:
             print(e)
             self.connection.rollback()
             return
         raw_response = cursor.fetchall()
-
         if raw:
             cursor.close()
             return raw_response
-
         col_names = [d[0] for d in cursor.description]
         result = []
         for row in raw_response:
@@ -39,7 +40,6 @@ class Database:
             for i, col_name in enumerate(col_names):
                 row_dict[col_name] = row[i]
             result.append(row_dict)
-
         if commit:
             self.connection.commit()
         cursor.close()
@@ -136,3 +136,7 @@ def getEnvDb(db_name: str = '') -> Database:
         user=os.getenv('DB_USER'),
         password=os.getenv('DB_PASSWORD')
     )
+
+def getEnvDbUrl(db_name: str = '') -> str:
+    db_name = db_name if db_name else os.getenv('DB_NAME')
+    return f"postgresql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{db_name}"

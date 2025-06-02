@@ -1,21 +1,21 @@
 WETH9_ABI = [
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "src",
         "type": "address"
       },
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "guy",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "wad",
         "type": "uint256"
@@ -25,16 +25,16 @@ WETH9_ABI = [
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "dst",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "wad",
         "type": "uint256"
@@ -44,22 +44,22 @@ WETH9_ABI = [
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "src",
         "type": "address"
       },
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "dst",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "wad",
         "type": "uint256"
@@ -69,16 +69,16 @@ WETH9_ABI = [
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "src",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "wad",
         "type": "uint256"
@@ -88,12 +88,12 @@ WETH9_ABI = [
     "type": "event"
   },
   {
-    "payable": true,
+    "payable": True,
     "stateMutability": "payable",
     "type": "fallback"
   },
   {
-    "constant": true,
+    "constant": True,
     "inputs": [
       {
         "internalType": "address",
@@ -114,12 +114,12 @@ WETH9_ABI = [
         "type": "uint256"
       }
     ],
-    "payable": false,
+    "payable": False,
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "constant": false,
+    "constant": False,
     "inputs": [
       {
         "internalType": "address",
@@ -140,12 +140,12 @@ WETH9_ABI = [
         "type": "bool"
       }
     ],
-    "payable": false,
+    "payable": False,
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "constant": true,
+    "constant": True,
     "inputs": [
       {
         "internalType": "address",
@@ -161,12 +161,12 @@ WETH9_ABI = [
         "type": "uint256"
       }
     ],
-    "payable": false,
+    "payable": False,
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "constant": true,
+    "constant": True,
     "inputs": [],
     "name": "decimals",
     "outputs": [
@@ -176,21 +176,21 @@ WETH9_ABI = [
         "type": "uint8"
       }
     ],
-    "payable": false,
+    "payable": False,
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "constant": false,
+    "constant": False,
     "inputs": [],
     "name": "deposit",
     "outputs": [],
-    "payable": true,
+    "payable": True,
     "stateMutability": "payable",
     "type": "function"
   },
   {
-    "constant": true,
+    "constant": True,
     "inputs": [],
     "name": "name",
     "outputs": [
@@ -200,12 +200,12 @@ WETH9_ABI = [
         "type": "string"
       }
     ],
-    "payable": false,
+    "payable": False,
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "constant": true,
+    "constant": True,
     "inputs": [],
     "name": "symbol",
     "outputs": [
@@ -215,12 +215,12 @@ WETH9_ABI = [
         "type": "string"
       }
     ],
-    "payable": false,
+    "payable": False,
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "constant": true,
+    "constant": True,
     "inputs": [],
     "name": "totalSupply",
     "outputs": [
@@ -230,12 +230,12 @@ WETH9_ABI = [
         "type": "uint256"
       }
     ],
-    "payable": false,
+    "payable": False,
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "constant": false,
+    "constant": False,
     "inputs": [
       {
         "internalType": "address",
@@ -256,12 +256,12 @@ WETH9_ABI = [
         "type": "bool"
       }
     ],
-    "payable": false,
+    "payable": False,
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "constant": false,
+    "constant": False,
     "inputs": [
       {
         "internalType": "address",
@@ -287,12 +287,12 @@ WETH9_ABI = [
         "type": "bool"
       }
     ],
-    "payable": false,
+    "payable": False,
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "constant": false,
+    "constant": False,
     "inputs": [
       {
         "internalType": "uint256",
@@ -302,7 +302,7 @@ WETH9_ABI = [
     ],
     "name": "withdraw",
     "outputs": [],
-    "payable": false,
+    "payable": False,
     "stateMutability": "nonpayable",
     "type": "function"
   }

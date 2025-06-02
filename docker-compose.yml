@@ -35,9 +35,10 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/lagoon
     volumes:
       - ./lagoon-indexer:/app
-      - ./damm-world-api/app/constants/abi:/app/abi
+      - ./damm-world-api/app/constants:/app/constants
     depends_on:
       - db
+    command: ["python", "indexer.py", "480", "10", "2000", "1", "60"]
 
 volumes:
   postgres_data:

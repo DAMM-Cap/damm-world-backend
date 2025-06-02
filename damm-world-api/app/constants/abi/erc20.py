@@ -1,6 +1,6 @@
 ERC20_ABI=[
   {
-    "constant": true,
+    "constant": True,
     "inputs": [],
     "name": "name",
     "outputs": [
@@ -9,12 +9,12 @@ ERC20_ABI=[
         "type": "string"
       }
     ],
-    "payable": false,
+    "payable": False,
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "constant": false,
+    "constant": False,
     "inputs": [
       {
         "name": "_upgradedAddress",
@@ -23,12 +23,12 @@ ERC20_ABI=[
     ],
     "name": "deprecate",
     "outputs": [],
-    "payable": false,
+    "payable": False,
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "constant": false,
+    "constant": False,
     "inputs": [
       {
         "name": "_spender",
@@ -41,12 +41,12 @@ ERC20_ABI=[
     ],
     "name": "approve",
     "outputs": [],
-    "payable": false,
+    "payable": False,
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "constant": true,
+    "constant": True,
     "inputs": [],
     "name": "deprecated",
     "outputs": [
@@ -55,12 +55,12 @@ ERC20_ABI=[
         "type": "bool"
       }
     ],
-    "payable": false,
+    "payable": False,
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "constant": false,
+    "constant": False,
     "inputs": [
       {
         "name": "_evilUser",
@@ -69,12 +69,12 @@ ERC20_ABI=[
     ],
     "name": "addBlackList",
     "outputs": [],
-    "payable": false,
+    "payable": False,
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "constant": true,
+    "constant": True,
     "inputs": [],
     "name": "totalSupply",
     "outputs": [
@@ -83,12 +83,12 @@ ERC20_ABI=[
         "type": "uint256"
       }
     ],
-    "payable": false,
+    "payable": False,
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "constant": false,
+    "constant": False,
     "inputs": [
       {
         "name": "_from",
@@ -105,12 +105,12 @@ ERC20_ABI=[
     ],
     "name": "transferFrom",
     "outputs": [],
-    "payable": false,
+    "payable": False,
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "constant": true,
+    "constant": True,
     "inputs": [],
     "name": "upgradedAddress",
     "outputs": [
@@ -119,12 +119,12 @@ ERC20_ABI=[
         "type": "address"
       }
     ],
-    "payable": false,
+    "payable": False,
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "constant": true,
+    "constant": True,
     "inputs": [
       {
         "name": "",
@@ -138,12 +138,12 @@ ERC20_ABI=[
         "type": "uint256"
       }
     ],
-    "payable": false,
+    "payable": False,
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "constant": true,
+    "constant": True,
     "inputs": [],
     "name": "decimals",
     "outputs": [
@@ -152,12 +152,12 @@ ERC20_ABI=[
         "type": "uint256"
       }
     ],
-    "payable": false,
+    "payable": False,
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "constant": true,
+    "constant": True,
     "inputs": [],
     "name": "maximumFee",
     "outputs": [
@@ -166,12 +166,12 @@ ERC20_ABI=[
         "type": "uint256"
       }
     ],
-    "payable": false,
+    "payable": False,
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "constant": true,
+    "constant": True,
     "inputs": [],
     "name": "_totalSupply",
     "outputs": [
@@ -180,21 +180,21 @@ ERC20_ABI=[
         "type": "uint256"
       }
     ],
-    "payable": false,
+    "payable": False,
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "constant": false,
+    "constant": False,
     "inputs": [],
     "name": "unpause",
     "outputs": [],
-    "payable": false,
+    "payable": False,
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "constant": true,
+    "constant": True,
     "inputs": [
       {
         "name": "_maker",
@@ -208,12 +208,12 @@ ERC20_ABI=[
         "type": "bool"
       }
     ],
-    "payable": false,
+    "payable": False,
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "constant": true,
+    "constant": True,
     "inputs": [
       {
         "name": "",
@@ -231,12 +231,12 @@ ERC20_ABI=[
         "type": "uint256"
       }
     ],
-    "payable": false,
+    "payable": False,
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "constant": true,
+    "constant": True,
     "inputs": [],
     "name": "paused",
     "outputs": [
@@ -245,12 +245,12 @@ ERC20_ABI=[
         "type": "bool"
       }
     ],
-    "payable": false,
+    "payable": False,
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "constant": true,
+    "constant": True,
     "inputs": [
       {
         "name": "who",
@@ -264,21 +264,21 @@ ERC20_ABI=[
         "type": "uint256"
       }
     ],
-    "payable": false,
+    "payable": False,
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "constant": false,
+    "constant": False,
     "inputs": [],
     "name": "pause",
     "outputs": [],
-    "payable": false,
+    "payable": False,
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "constant": true,
+    "constant": True,
     "inputs": [],
     "name": "getOwner",
     "outputs": [
@@ -287,12 +287,12 @@ ERC20_ABI=[
         "type": "address"
       }
     ],
-    "payable": false,
+    "payable": False,
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "constant": true,
+    "constant": True,
     "inputs": [],
     "name": "owner",
     "outputs": [
@@ -301,12 +301,12 @@ ERC20_ABI=[
         "type": "address"
       }
     ],
-    "payable": false,
+    "payable": False,
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "constant": true,
+    "constant": True,
     "inputs": [],
     "name": "symbol",
     "outputs": [
@@ -315,12 +315,12 @@ ERC20_ABI=[
         "type": "string"
       }
     ],
-    "payable": false,
+    "payable": False,
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "constant": false,
+    "constant": False,
     "inputs": [
       {
         "name": "_to",
@@ -333,12 +333,12 @@ ERC20_ABI=[
     ],
     "name": "transfer",
     "outputs": [],
-    "payable": false,
+    "payable": False,
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "constant": false,
+    "constant": False,
     "inputs": [
       {
         "name": "newBasisPoints",
@@ -351,12 +351,12 @@ ERC20_ABI=[
     ],
     "name": "setParams",
     "outputs": [],
-    "payable": false,
+    "payable": False,
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "constant": false,
+    "constant": False,
     "inputs": [
       {
         "name": "amount",
@@ -365,12 +365,12 @@ ERC20_ABI=[
     ],
     "name": "issue",
     "outputs": [],
-    "payable": false,
+    "payable": False,
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "constant": false,
+    "constant": False,
     "inputs": [
       {
         "name": "amount",
@@ -379,12 +379,12 @@ ERC20_ABI=[
     ],
     "name": "redeem",
     "outputs": [],
-    "payable": false,
+    "payable": False,
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "constant": true,
+    "constant": True,
     "inputs": [
       {
         "name": "_owner",
@@ -402,12 +402,12 @@ ERC20_ABI=[
         "type": "uint256"
       }
     ],
-    "payable": false,
+    "payable": False,
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "constant": true,
+    "constant": True,
     "inputs": [],
     "name": "basisPointsRate",
     "outputs": [
@@ -416,12 +416,12 @@ ERC20_ABI=[
         "type": "uint256"
       }
     ],
-    "payable": false,
+    "payable": False,
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "constant": true,
+    "constant": True,
     "inputs": [
       {
         "name": "",
@@ -435,12 +435,12 @@ ERC20_ABI=[
         "type": "bool"
       }
     ],
-    "payable": false,
+    "payable": False,
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "constant": false,
+    "constant": False,
     "inputs": [
       {
         "name": "_clearedUser",
@@ -449,12 +449,12 @@ ERC20_ABI=[
     ],
     "name": "removeBlackList",
     "outputs": [],
-    "payable": false,
+    "payable": False,
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "constant": true,
+    "constant": True,
     "inputs": [],
     "name": "MAX_UINT",
     "outputs": [
@@ -463,12 +463,12 @@ ERC20_ABI=[
         "type": "uint256"
       }
     ],
-    "payable": false,
+    "payable": False,
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "constant": false,
+    "constant": False,
     "inputs": [
       {
         "name": "newOwner",
@@ -477,12 +477,12 @@ ERC20_ABI=[
     ],
     "name": "transferOwnership",
     "outputs": [],
-    "payable": false,
+    "payable": False,
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "constant": false,
+    "constant": False,
     "inputs": [
       {
         "name": "_blackListedUser",
@@ -491,7 +491,7 @@ ERC20_ABI=[
     ],
     "name": "destroyBlackFunds",
     "outputs": [],
-    "payable": false,
+    "payable": False,
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -514,15 +514,15 @@ ERC20_ABI=[
         "type": "uint256"
       }
     ],
-    "payable": false,
+    "payable": False,
     "stateMutability": "nonpayable",
     "type": "constructor"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": False,
         "name": "amount",
         "type": "uint256"
       }
@@ -531,10 +531,10 @@ ERC20_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": False,
         "name": "amount",
         "type": "uint256"
       }
@@ -543,10 +543,10 @@ ERC20_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": False,
         "name": "newAddress",
         "type": "address"
       }
@@ -555,15 +555,15 @@ ERC20_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": False,
         "name": "feeBasisPoints",
         "type": "uint256"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "name": "maxFee",
         "type": "uint256"
       }
@@ -572,15 +572,15 @@ ERC20_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": False,
         "name": "_blackListedUser",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "name": "_balance",
         "type": "uint256"
       }
@@ -589,10 +589,10 @@ ERC20_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": False,
         "name": "_user",
         "type": "address"
       }
@@ -601,10 +601,10 @@ ERC20_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": False,
         "name": "_user",
         "type": "address"
       }
@@ -613,20 +613,20 @@ ERC20_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "name": "owner",
         "type": "address"
       },
       {
-        "indexed": true,
+        "indexed": True,
         "name": "spender",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "name": "value",
         "type": "uint256"
       }
@@ -635,20 +635,20 @@ ERC20_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "name": "from",
         "type": "address"
       },
       {
-        "indexed": true,
+        "indexed": True,
         "name": "to",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "name": "value",
         "type": "uint256"
       }
@@ -657,13 +657,13 @@ ERC20_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [],
     "name": "Pause",
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [],
     "name": "Unpause",
     "type": "event"

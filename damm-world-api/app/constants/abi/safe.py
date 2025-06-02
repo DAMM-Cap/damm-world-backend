@@ -1,9 +1,9 @@
 SAFE_ABI = [
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "owner",
         "type": "address"
@@ -13,16 +13,16 @@ SAFE_ABI = [
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "bytes32",
         "name": "approvedHash",
         "type": "bytes32"
       },
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "owner",
         "type": "address"
@@ -32,10 +32,10 @@ SAFE_ABI = [
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "handler",
         "type": "address"
@@ -45,10 +45,10 @@ SAFE_ABI = [
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "guard",
         "type": "address"
@@ -58,10 +58,10 @@ SAFE_ABI = [
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "threshold",
         "type": "uint256"
@@ -71,10 +71,10 @@ SAFE_ABI = [
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "module",
         "type": "address"
@@ -84,10 +84,10 @@ SAFE_ABI = [
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "module",
         "type": "address"
@@ -97,16 +97,16 @@ SAFE_ABI = [
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "bytes32",
         "name": "txHash",
         "type": "bytes32"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "payment",
         "type": "uint256"
@@ -116,10 +116,10 @@ SAFE_ABI = [
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "module",
         "type": "address"
@@ -129,10 +129,10 @@ SAFE_ABI = [
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "module",
         "type": "address"
@@ -142,16 +142,16 @@ SAFE_ABI = [
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "bytes32",
         "name": "txHash",
         "type": "bytes32"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "payment",
         "type": "uint256"
@@ -161,10 +161,10 @@ SAFE_ABI = [
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "owner",
         "type": "address"
@@ -174,34 +174,34 @@ SAFE_ABI = [
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "address",
         "name": "module",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "address",
         "name": "to",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "value",
         "type": "uint256"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "bytes",
         "name": "data",
         "type": "bytes"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "enum Enum.Operation",
         "name": "operation",
         "type": "uint8"
@@ -211,70 +211,70 @@ SAFE_ABI = [
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "address",
         "name": "to",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "value",
         "type": "uint256"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "bytes",
         "name": "data",
         "type": "bytes"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "enum Enum.Operation",
         "name": "operation",
         "type": "uint8"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "safeTxGas",
         "type": "uint256"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "baseGas",
         "type": "uint256"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "gasPrice",
         "type": "uint256"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "address",
         "name": "gasToken",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "address payable",
         "name": "refundReceiver",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "bytes",
         "name": "signatures",
         "type": "bytes"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "bytes",
         "name": "additionalInfo",
         "type": "bytes"
@@ -284,16 +284,16 @@ SAFE_ABI = [
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "sender",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "value",
         "type": "uint256"
@@ -303,34 +303,34 @@ SAFE_ABI = [
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "initiator",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "address[]",
         "name": "owners",
         "type": "address[]"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "threshold",
         "type": "uint256"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "address",
         "name": "initializer",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "address",
         "name": "fallbackHandler",
         "type": "address"
@@ -340,10 +340,10 @@ SAFE_ABI = [
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "bytes32",
         "name": "msgHash",
         "type": "bytes32"

@@ -418,22 +418,22 @@ LAGOON_ABI=[
     "type": "error"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "owner",
         "type": "address"
       },
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "spender",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "value",
         "type": "uint256"
@@ -443,28 +443,28 @@ LAGOON_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "sender",
         "type": "address"
       },
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "owner",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "assets",
         "type": "uint256"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "shares",
         "type": "uint256"
@@ -474,34 +474,34 @@ LAGOON_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "controller",
         "type": "address"
       },
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "owner",
         "type": "address"
       },
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "uint256",
         "name": "requestId",
         "type": "uint256"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "address",
         "name": "sender",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "assets",
         "type": "uint256"
@@ -511,16 +511,16 @@ LAGOON_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "uint256",
         "name": "requestId",
         "type": "uint256"
       },
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "controller",
         "type": "address"
@@ -530,28 +530,28 @@ LAGOON_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "sender",
         "type": "address"
       },
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "owner",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "assets",
         "type": "uint256"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "shares",
         "type": "uint256"
@@ -561,16 +561,16 @@ LAGOON_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "address",
         "name": "oldReceiver",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "address",
         "name": "newReceiver",
         "type": "address"
@@ -580,16 +580,16 @@ LAGOON_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "oldHighWaterMark",
         "type": "uint256"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "newHighWaterMark",
         "type": "uint256"
@@ -599,10 +599,10 @@ LAGOON_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint64",
         "name": "version",
         "type": "uint64"
@@ -612,10 +612,10 @@ LAGOON_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "totalAssets",
         "type": "uint256"
@@ -625,22 +625,22 @@ LAGOON_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "controller",
         "type": "address"
       },
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "operator",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "bool",
         "name": "approved",
         "type": "bool"
@@ -650,16 +650,16 @@ LAGOON_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "previousOwner",
         "type": "address"
       },
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "newOwner",
         "type": "address"
@@ -669,16 +669,16 @@ LAGOON_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "previousOwner",
         "type": "address"
       },
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "newOwner",
         "type": "address"
@@ -688,10 +688,10 @@ LAGOON_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "address",
         "name": "account",
         "type": "address"
@@ -701,7 +701,7 @@ LAGOON_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
         "components": [
@@ -716,7 +716,7 @@ LAGOON_ABI=[
             "type": "uint16"
           }
         ],
-        "indexed": false,
+        "indexed": False,
         "internalType": "struct Rates",
         "name": "oldRates",
         "type": "tuple"
@@ -734,13 +734,13 @@ LAGOON_ABI=[
             "type": "uint16"
           }
         ],
-        "indexed": false,
+        "indexed": False,
         "internalType": "struct Rates",
         "name": "newRate",
         "type": "tuple"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "timestamp",
         "type": "uint256"
@@ -750,34 +750,34 @@ LAGOON_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "controller",
         "type": "address"
       },
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "owner",
         "type": "address"
       },
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "uint256",
         "name": "requestId",
         "type": "uint256"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "address",
         "name": "sender",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "shares",
         "type": "uint256"
@@ -787,28 +787,28 @@ LAGOON_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "referral",
         "type": "address"
       },
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "owner",
         "type": "address"
       },
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "uint256",
         "name": "requestId",
         "type": "uint256"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "assets",
         "type": "uint256"
@@ -818,40 +818,40 @@ LAGOON_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "uint40",
         "name": "epochId",
         "type": "uint40"
       },
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "uint40",
         "name": "settledId",
         "type": "uint40"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "totalAssets",
         "type": "uint256"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "totalSupply",
         "type": "uint256"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "assetsDeposited",
         "type": "uint256"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "sharesMinted",
         "type": "uint256"
@@ -861,40 +861,40 @@ LAGOON_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "uint40",
         "name": "epochId",
         "type": "uint40"
       },
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "uint40",
         "name": "settledId",
         "type": "uint40"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "totalAssets",
         "type": "uint256"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "totalSupply",
         "type": "uint256"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "assetsWithdrawed",
         "type": "uint256"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "sharesBurned",
         "type": "uint256"
@@ -904,10 +904,10 @@ LAGOON_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "enum State",
         "name": "state",
         "type": "uint8"
@@ -917,16 +917,16 @@ LAGOON_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint128",
         "name": "oldLifespan",
         "type": "uint128"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint128",
         "name": "newLifespan",
         "type": "uint128"
@@ -936,10 +936,10 @@ LAGOON_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "totalAssets",
         "type": "uint256"
@@ -949,22 +949,22 @@ LAGOON_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "from",
         "type": "address"
       },
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "to",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "value",
         "type": "uint256"
@@ -974,10 +974,10 @@ LAGOON_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "address",
         "name": "account",
         "type": "address"
@@ -987,16 +987,16 @@ LAGOON_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "address",
         "name": "oldManager",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "address",
         "name": "newManager",
         "type": "address"
@@ -1006,22 +1006,22 @@ LAGOON_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [],
     "name": "WhitelistDisabled",
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "address",
         "name": "oldManager",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "address",
         "name": "newManager",
         "type": "address"
@@ -1031,16 +1031,16 @@ LAGOON_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "account",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "bool",
         "name": "authorized",
         "type": "bool"
@@ -1050,34 +1050,34 @@ LAGOON_ABI=[
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "sender",
         "type": "address"
       },
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "receiver",
         "type": "address"
       },
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "owner",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "assets",
         "type": "uint256"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "shares",
         "type": "uint256"

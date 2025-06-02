@@ -31,22 +31,22 @@ WLD_ABI = [
     "type": "constructor"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "owner",
         "type": "address"
       },
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "spender",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "value",
         "type": "uint256"
@@ -56,16 +56,16 @@ WLD_ABI = [
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "account",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "amount",
         "type": "uint256"
@@ -75,16 +75,16 @@ WLD_ABI = [
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "account",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "amount",
         "type": "uint256"
@@ -94,22 +94,22 @@ WLD_ABI = [
     "type": "event"
   },
   {
-    "anonymous": false,
+    "anonymous": False,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "from",
         "type": "address"
       },
       {
-        "indexed": true,
+        "indexed": True,
         "internalType": "address",
         "name": "to",
         "type": "address"
       },
       {
-        "indexed": false,
+        "indexed": False,
         "internalType": "uint256",
         "name": "value",
         "type": "uint256"

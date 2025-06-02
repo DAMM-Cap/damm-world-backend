@@ -6,7 +6,7 @@ import os
 import argparse
 from lagoon_indexer import LagoonIndexer
 import time
-
+from constants.abi.lagoon import LAGOON_ABI
 
 """ 
 load_dotenv()
@@ -21,11 +21,6 @@ def main():
         print(f"Database time: {result.fetchone()[0]}")
 
  """
-import json
-
-with open("abi/LAGOON_ABI.json") as f:
-    LAGOON_ABI = json.load(f)
-
 
 def main():
     load_dotenv()

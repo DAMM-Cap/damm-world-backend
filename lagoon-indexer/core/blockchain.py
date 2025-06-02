@@ -5,28 +5,12 @@ import os
 import ssl
 import certifi
 from typing import List
-
-
-import json
-
-with open("abi/ERC20_ABI.json") as f:
-    ERC20_ABI = json.load(f)
-
-with open("abi/LAGOON_ABI.json") as f:
-    LAGOON_ABI = json.load(f)
-
-with open("abi/WETH9_ABI.json") as f:
-    WETH9_ABI = json.load(f)
-
-with open("abi/WLD_ABI.json") as f:
-    WLD_ABI = json.load(f)
-
-with open("abi/SAFE_ABI.json") as f:
-    SAFE_ABI = json.load(f)
-
-with open("abi/DAMM_WORLD_ADDRESSES.json") as f:
-    DAMM_WORLD_ADDRESSES = json.load(f)
-
+from constants.abi.erc20 import ERC20_ABI
+from constants.abi.lagoon import LAGOON_ABI
+from constants.abi.weth9 import WETH9_ABI
+from constants.abi.optimismMintableERC20 import WLD_ABI
+from constants.abi.safe import SAFE_ABI
+from constants.addresses import DAMM_WORLD_ADDRESSES
 
 class Blockchain:
 

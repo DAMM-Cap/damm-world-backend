@@ -3,3 +3,6 @@ uvicorn==0.15.0
 python-dotenv==0.21.1
 web3==6.4.0
 certifi==2023.5.7
+PyJWT==2.8.0
+psycopg2-binary
+pandas

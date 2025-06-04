@@ -17,6 +17,21 @@ services:
       timeout: 5s
       retries: 5
 
+  damm-api:
+    build: ./damm-world-api
+    container_name: damm_world_api
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./damm-world-api:/app
+      - ./lagoon-indexer/db:/app/db
+    depends_on:
+      db:
+        condition: service_healthy
+
   indexer:
     build: ./lagoon-indexer
     container_name: lagoon_indexer
@@ -30,7 +45,7 @@ services:
       db:
         condition: service_healthy
     #command: ["python", "indexer.py", "480", "10", "2000", "1", "60"] ## Run on Worldchain
-    command: ["python", "indexer.py", "31337", "10", "2000", "1", "60"] ## Run on Anvil local fork
+    command: ["python", "indexer.py", "1", "31337", "10", "2000", "1", "60"] ## Run on Anvil local fork
 
 volumes:
   postgres_data:

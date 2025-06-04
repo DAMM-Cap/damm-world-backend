@@ -13,6 +13,7 @@ def main():
     load_dotenv()
 
     parser = argparse.ArgumentParser(description='Lagoon Indexer')
+    parser.add_argument('vault_id', type=int, help='Vault ID')
     parser.add_argument('chain_id', type=int, help='Chain ID')
     parser.add_argument('sleep_time', type=int, help='Sleep time between iterations')
     parser.add_argument('range', type=int, help='Block range to process')
@@ -22,7 +23,7 @@ def main():
     args = parser.parse_args()
     real_time = bool(args.real_time)
 
-    events_to_track = ["SettleDeposit", "SettleRedeem", "DepositRequestCanceled"]
+    events_to_track = ["DepositRequest", "RedeemRequest", "SettleDeposit", "SettleRedeem", "Withdraw", "DepositRequestCanceled", "Transfer", "NewTotalAssetsUpdated"]
 
     indexer = LagoonIndexer(
         lagoon_abi=LAGOON_ABI,
@@ -31,6 +32,7 @@ def main():
         range=args.range,
         event_names=events_to_track,
         real_time=real_time,
+        vault_id=args.vault_id, 
     )
 
     start_time = time.time()

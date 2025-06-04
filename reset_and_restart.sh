@@ -6,6 +6,7 @@ docker-compose down -v
 # Remove any leftover volumes, images, networks
 echo "Cleaning up unused Docker resources..."
 docker system prune -af --volumes
+docker volume prune -f
 
 # Build fresh images
 echo "Building images with no cache..."
@@ -23,8 +24,10 @@ while [[ $(docker inspect --format='{{.State.Health.Status}}' damm_postgres) != 
 done
 echo "Postgres is healthy!"
 
-# Create tables
-echo "Recreating tables..."
-docker-compose run --rm indexer python create_table.py
+# Create tables and insert fixed vault in same container session
+echo "Creating tables and inserting fixed vault in the same container session..."
+docker-compose exec indexer bash -c "python create_table.py && python insert_fixed_vault.py"
 
-echo "Done! All tables recreated and services restarted."
+# Launch indexer
+echo "Starting Lagoon indexer..."
+docker-compose up indexer

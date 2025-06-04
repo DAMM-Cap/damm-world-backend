@@ -95,6 +95,10 @@ class Blockchain:
 def getEnvNode(chain_id:int)->Blockchain:
     if chain_id==480:
         return getEnvWorldchainNode()
+    elif chain_id==31337:
+        return getEnvAnvilForkedWCNode()
+    elif chain_id==8453:
+        return getEnvBaseNode()
     else:
         raise Exception('RPC unavailable for that chain_id')
 
@@ -103,3 +107,6 @@ def getEnvWorldchainNode():
 
 def getEnvAnvilForkedWCNode():
     return Blockchain(os.getenv('ANVIL_FORKED_WC_JSON_RPC'),31337)
+
+def getEnvBaseNode():
+    return Blockchain(os.getenv('BASE_JSON_RPC'),8453)

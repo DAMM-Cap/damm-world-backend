@@ -18,6 +18,8 @@ def insert_fixed_vaults():
     wld_token_address_anvil = get_lagoon_deployments(31337)["wld_token"]
     lagoon_address_worldchain = get_lagoon_deployments(480)["lagoon_address"]
     wld_token_address_worldchain = get_lagoon_deployments(480)["wld_token"]
+    lagoon_address_base = get_lagoon_deployments(8453)["lagoon_address"]
+    usdc_token_address_base = get_lagoon_deployments(8453)["wld_token"]
     
     query = """
     INSERT INTO vaults (
@@ -51,6 +53,16 @@ def insert_fixed_vaults():
                 lagoon_address_worldchain,
                 'WLD',
                 wld_token_address_worldchain
+            ))
+            # BASE
+            cur.execute(query, (
+                3,
+                8453,
+                'USDC/USDC',
+                'vUSDC',
+                lagoon_address_base,
+                'USDC',
+                usdc_token_address_base
             ))
         conn.commit()
     print("Fixed vault row inserted (or already exists).")

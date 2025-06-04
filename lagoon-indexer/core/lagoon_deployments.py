@@ -18,6 +18,14 @@ def get_lagoon_deployments(chain_id: int):
             "wld_token": Web3.to_checksum_address("0x2cFc85d8E48F8EAB294be644d9E25C3030863003"),
             "silo": Web3.to_checksum_address("0xf66975719b750632c0d065b70cb4dea20d538966")
         },
+        8453: {
+            "genesis_block_lagoon": 31139970,
+            "lagoon_address": Web3.to_checksum_address("0x9c59AA6271f29ECfcefF4395b53a86f1d5A61ab9"),
+            "safe_address": Web3.to_checksum_address("0xd271718aC457324b4F8CBeF186cc4AE167d67D9b"),
+            "wrapped_native_weth_token": Web3.to_checksum_address("0x4200000000000000000000000000000000000006"),
+            "wld_token": Web3.to_checksum_address("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"),
+            "silo": Web3.to_checksum_address("0x3a84d637f6079c39e3be13ae1d0843d4274789d5")
+        }
     }
     if chain_id not in deployments:
         raise ValueError(f"Chain ID {chain_id} not supported")

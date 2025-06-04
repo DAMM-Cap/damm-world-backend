@@ -30,4 +30,4 @@ docker-compose exec indexer bash -c "python create_table.py && python insert_fix
 
 # Launch indexer
 echo "Starting Lagoon indexer..."
-docker-compose up indexer
+docker-compose up

@@ -7,14 +7,16 @@ def get_lagoon_deployments(chain_id: int):
             "lagoon_address": Web3.to_checksum_address("0x97aAC927FBe5802a23aC562699a51F0CfF23cF9A"),
             "safe_address": Web3.to_checksum_address("0x29B055022B53937E3D147D6FDFBA08aBe9A6D434"),
             "wrapped_native_weth_token": Web3.to_checksum_address("0x4200000000000000000000000000000000000006"),
-            "wld_token": Web3.to_checksum_address("0x2cFc85d8E48F8EAB294be644d9E25C3030863003")
+            "wld_token": Web3.to_checksum_address("0x2cFc85d8E48F8EAB294be644d9E25C3030863003"),
+            "silo": Web3.to_checksum_address("0xf66975719b750632c0d065b70cb4dea20d538966")
         },
         31337: {
             "genesis_block_lagoon": 14360977,
             "lagoon_address": Web3.to_checksum_address("0x97aAC927FBe5802a23aC562699a51F0CfF23cF9A"),
             "safe_address": Web3.to_checksum_address("0x29B055022B53937E3D147D6FDFBA08aBe9A6D434"),
             "wrapped_native_weth_token": Web3.to_checksum_address("0x4200000000000000000000000000000000000006"),
-            "wld_token": Web3.to_checksum_address("0x2cFc85d8E48F8EAB294be644d9E25C3030863003")
+            "wld_token": Web3.to_checksum_address("0x2cFc85d8E48F8EAB294be644d9E25C3030863003"),
+            "silo": Web3.to_checksum_address("0xf66975719b750632c0d065b70cb4dea20d538966")
         },
     }
     if chain_id not in deployments:

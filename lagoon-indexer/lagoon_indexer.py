@@ -9,10 +9,10 @@ from datetime import datetime
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from db.db import Database, getEnvDb
-from db.query.insertLagoonEvents import insert_lagoon_events
 from core.blockchain import getEnvNode
 from core.lagoon_deployments import get_lagoon_deployments
-from db.lagoon_db_utils import LagoonDbUtils
+from db.query.lagoon_db_utils import LagoonDbUtils
+from db.query.lagoon_events import LagoonEvents, insert_lagoon_events
 
 # Event Formatter
 class EventFormatter:
@@ -173,24 +173,49 @@ class EventProcessor:
         self.save_to_db_batch('RedeemRequest', event_data_list)
 
     def store_SettleDeposit_events(self, events: List[Dict]):
-        event_data_list = [
-            EventFormatter.format_SettleDeposit_data(event, self.vault_id)
-            for event in events
-        ]
+        event_data_list = []
+        for event in events:
+            data = EventFormatter.format_SettleDeposit_data(event, self.vault_id)
+            event_data_list.append(data)
+
+            # UPDATE the matching DepositRequest status
+            LagoonEvents.update_settled_deposit_requests(
+                db=self.db,
+                vault_id=self.vault_id,
+                settled_timestamp=data['timestamp']
+            )
+
         self.save_to_db_batch('SettleDeposit', event_data_list)
 
     def store_SettleRedeem_events(self, events: List[Dict]):
-        event_data_list = [
-            EventFormatter.format_SettleRedeem_data(event, self.vault_id)
-            for event in events
-        ]
-        self.save_to_db_batch('SettleRedeem', event_data_list)
+        event_data_list = []
+        for event in events:
+            data = EventFormatter.format_SettleRedeem_data(event, self.vault_id)
+            event_data_list.append(data)
 
+            # UPDATE the matching RedeemRequest status
+            LagoonEvents.update_settled_redeem_requests(
+                db=self.db,
+                vault_id=self.vault_id,
+                settled_timestamp=data['timestamp']
+            )
+
+        self.save_to_db_batch('SettleRedeem', event_data_list)
+    
     def store_DepositRequestCanceled_events(self, events: List[Dict]):
-        event_data_list = [
-            EventFormatter.format_DepositRequestCanceled_data(event, self.vault_id)
-            for event in events
-        ]
+        event_data_list = []
+        for event in events:
+            data = EventFormatter.format_DepositRequestCanceled_data(event, self.vault_id)
+            event_data_list.append(data)
+
+            # UPDATE the matching DepositRequest status
+            LagoonEvents.update_canceled_deposit_request(
+                db=self.db,
+                vault_id=self.vault_id,
+                request_id=data['request_id'],
+                cancel_timestamp=data['timestamp']
+            )
+
         self.save_to_db_batch('DepositRequestCanceled', event_data_list)
 
     def store_Transfer_events(self, events: List[Dict]):

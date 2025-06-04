@@ -28,6 +28,9 @@ services:
     volumes:
       - ./damm-world-api:/app
       - ./lagoon-indexer/db:/app/db
+      - ./lagoon-indexer/core:/app/core ## REVISE THIS
+      - ./lagoon-indexer/utils:/app/utils ## REVISE THIS
+
     depends_on:
       db:
         condition: service_healthy

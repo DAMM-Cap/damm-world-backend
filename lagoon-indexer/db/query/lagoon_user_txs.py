@@ -1,7 +1,7 @@
 from db.db import getEnvDb
-from app.constants.addresses import DAMM_WORLD_ADDRESSES
 from typing import Dict, Any
-from app.utils.converters import convert_numpy_types
+from core.lagoon_deployments import get_lagoon_deployments
+from utils.converters import convert_numpy_types
 
 def get_count_query(table: str, owner_column: str = None) -> str:
     if owner_column:
@@ -68,8 +68,8 @@ def get_user_txs(address: str, offset: int, limit: int, chain_id: int = 480) -> 
     db = getEnvDb('damm-public')
     lowercase_address = address.lower()
     contract_addresses = [
-        DAMM_WORLD_ADDRESSES[chain_id]['lagoon'].lower(),
-        DAMM_WORLD_ADDRESSES[chain_id]['silo'].lower()
+        get_lagoon_deployments(chain_id)['lagoon_address'].lower(),
+        get_lagoon_deployments(chain_id)['silo'].lower()
     ]
 
     tables_config = {

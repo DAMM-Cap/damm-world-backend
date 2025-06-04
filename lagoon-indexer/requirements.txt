@@ -5,3 +5,4 @@ python-dotenv
 watchdog
 pandas
 asyncpg==0.30.0
+numpy

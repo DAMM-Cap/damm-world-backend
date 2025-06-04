@@ -5,6 +5,7 @@ import time
 import traceback
 import pandas as pd
 from typing import List, Dict
+from datetime import datetime
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from db.db import Database, getEnvDb
@@ -33,7 +34,9 @@ class EventFormatter:
             'owner': event['args']['owner'].lower(),
             'sender': event['args']['sender'].lower(),
             'assets': int(event['args']['assets']),
-            'status': 'pending'
+            'status': 'pending',
+            'timestamp': event['blockTimestamp'],
+            'status_updated_at': event['blockTimestamp']
         })
         return data
     
@@ -46,7 +49,9 @@ class EventFormatter:
             'owner': event['args']['owner'].lower(),
             'sender': event['args']['sender'].lower(),
             'shares': int(event['args']['shares']),
-            'status': 'pending'
+            'status': 'pending',
+            'timestamp': event['blockTimestamp'],
+            'status_updated_at': event['blockTimestamp']
         })
         return data
     
@@ -60,6 +65,7 @@ class EventFormatter:
             'total_supply': int(event['args']['totalSupply']),
             'assets_deposited': int(event['args']['assetsDeposited']),
             'shares_minted': int(event['args']['sharesMinted']),
+            'timestamp': event['blockTimestamp'],
         })
         return data
 
@@ -72,7 +78,8 @@ class EventFormatter:
             'total_assets': int(event['args']['totalAssets']),
             'total_supply': int(event['args']['totalSupply']),
             'assets_withdrawed': int(event['args']['assetsWithdrawed']),
-            'shares_burned': int(event['args']['sharesBurned'])
+            'shares_burned': int(event['args']['sharesBurned']),
+            'timestamp': event['blockTimestamp'],
         })
         return data
 
@@ -81,7 +88,8 @@ class EventFormatter:
         data = EventFormatter._common_fields(event, vault_id)
         data.update({
             'request_id': int(event['args']['requestId']),
-            'controller': event['args']['controller']
+            'controller': event['args']['controller'],
+            'timestamp': event['blockTimestamp'],
         })
         return data
 
@@ -91,7 +99,8 @@ class EventFormatter:
         data.update({
             'from_address': event['args']['from'].lower(),
             'to_address': event['args']['to'].lower(),
-            'value': int(event['args']['value'])
+            'value': int(event['args']['value']),
+            'timestamp': event['blockTimestamp'],
         })
         return data
     
@@ -99,7 +108,8 @@ class EventFormatter:
     def format_NewTotalAssetsUpdated_data(event: Dict, vault_id: int) -> Dict:
         data = EventFormatter._common_fields(event, vault_id)
         data.update({
-            'total_assets': int(event['args']['totalAssets'])
+            'total_assets': int(event['args']['totalAssets']),
+            'timestamp': event['blockTimestamp'],
         })
         return data
 
@@ -111,7 +121,8 @@ class EventFormatter:
             'receiver': event['args']['receiver'].lower(),
             'owner': event['args']['owner'].lower(),
             'assets': int(event['args']['assets']),
-            'shares': int(event['args']['shares'])
+            'shares': int(event['args']['shares']),
+            'timestamp': event['blockTimestamp'],
         })
         return data
 
@@ -136,6 +147,13 @@ class EventProcessor:
             return
         df = pd.DataFrame(event_data_list)
         table_name = self.EVENT_TABLES.get(event_name)
+
+        # Convert timestamp columns to datetime objects
+        if 'timestamp' in df.columns:
+            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s').dt.strftime('%Y-%m-%d %H:%M:%S')
+        if 'status_updated_at' in df.columns:
+            df['status_updated_at'] = pd.to_datetime(df['status_updated_at'], unit='s').dt.strftime('%Y-%m-%d %H:%M:%S')
+
         if table_name:
             insert_lagoon_events(df, table_name, self.db)
             print(f"Saved {len(event_data_list)} {event_name} events to {table_name}.")
@@ -218,6 +236,11 @@ class LagoonIndexer:
         self.db = getEnvDb('damm-public')
         self.event_processor = EventProcessor(self.db, self.vault_id)
 
+    def get_block_ts(self, event: Dict) -> datetime:
+        block_number = int(event['blockNumber'])
+        block = self.blockchain.node.eth.get_block(block_number)
+        return datetime.fromtimestamp(block['timestamp'])
+
     def get_latest_block_number(self) -> int:
         return self.blockchain.getLatestBlockNumber()
 
@@ -243,6 +266,14 @@ class LagoonIndexer:
                 if not events:
                     print(f"No {event_name} events found in block range {from_block}-{to_block}")
                     continue
+
+                # Create fresh dict copies with blockTimestamp added
+                new_events = []
+                for event in events:
+                    event_copy = dict(event)
+                    event_copy['blockTimestamp'] = self.get_block_ts(event)
+                    new_events.append(event_copy)
+                events = new_events  # Replace the list with the new one
 
                 if event_name == 'DepositRequest':
                     self.event_processor.store_DepositRequest_events(events)

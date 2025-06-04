@@ -20,7 +20,7 @@ def create_lagoon_tables():
 
     create_vaults_query = """
     CREATE TABLE IF NOT EXISTS vaults (
-        vault_id SERIAL PRIMARY KEY,
+        vault_id INTEGER PRIMARY KEY,
         chain_id INTEGER NOT NULL,
         name TEXT NOT NULL,
         vault_token_symbol TEXT NOT NULL,             -- This is the LP token, e.g., "vWLD"
@@ -40,7 +40,7 @@ def create_lagoon_tables():
         total_shares NUMERIC,
         main_token_balance NUMERIC,
         secondary_token_balance NUMERIC,
-        recorded_at TIMESTAMP DEFAULT NOW(),
+        recorded_at TIMESTAMP NOT NULL,
         PRIMARY KEY (vault_id, recorded_at),
         FOREIGN KEY (vault_id) REFERENCES vaults(vault_id)
     );
@@ -76,6 +76,8 @@ def create_lagoon_tables():
         sender VARCHAR(42),
         assets NUMERIC(78, 0),
         status deposit_request_status NOT NULL DEFAULT 'pending',
+        timestamp TIMESTAMP NOT NULL,
+        status_updated_at TIMESTAMP NOT NULL,
         PRIMARY KEY (block, log_index, vault_id),
         FOREIGN KEY (vault_id) REFERENCES vaults(vault_id)
     );
@@ -101,6 +103,8 @@ def create_lagoon_tables():
         sender VARCHAR(42),
         shares NUMERIC(78, 0),
         status redeem_request_status NOT NULL DEFAULT 'pending',
+        timestamp TIMESTAMP NOT NULL,
+        status_updated_at TIMESTAMP NOT NULL,
         PRIMARY KEY (block, log_index, vault_id),
         FOREIGN KEY (vault_id) REFERENCES vaults(vault_id)
     );
@@ -118,6 +122,7 @@ def create_lagoon_tables():
         assets_deposited NUMERIC(78, 0),
         shares_minted NUMERIC(78, 0),
         tx_hash VARCHAR(66) NOT NULL,
+        timestamp TIMESTAMP NOT NULL,
         PRIMARY KEY (block, log_index, vault_id),
         FOREIGN KEY (vault_id) REFERENCES vaults(vault_id)
     );
@@ -135,6 +140,7 @@ def create_lagoon_tables():
         assets_withdrawed NUMERIC(78, 0),
         shares_burned NUMERIC(78, 0),
         tx_hash VARCHAR(66) NOT NULL,
+        timestamp TIMESTAMP NOT NULL,
         PRIMARY KEY (block, log_index, vault_id),
         FOREIGN KEY (vault_id) REFERENCES vaults(vault_id)
     );
@@ -151,6 +157,7 @@ def create_lagoon_tables():
         owner VARCHAR(42),
         assets NUMERIC(78, 0),
         shares NUMERIC(78, 0),
+        timestamp TIMESTAMP NOT NULL,
         PRIMARY KEY (block, log_index, vault_id),
         FOREIGN KEY (vault_id) REFERENCES vaults(vault_id)
     );
@@ -164,6 +171,7 @@ def create_lagoon_tables():
         request_id BIGINT,
         controller VARCHAR(42),
         tx_hash VARCHAR(66) NOT NULL,
+        timestamp TIMESTAMP NOT NULL,
         PRIMARY KEY (block, log_index, vault_id),
         FOREIGN KEY (vault_id) REFERENCES vaults(vault_id)
     );
@@ -178,6 +186,7 @@ def create_lagoon_tables():
         to_address VARCHAR(42),
         value NUMERIC(78, 0),
         tx_hash VARCHAR(66) NOT NULL,
+        timestamp TIMESTAMP NOT NULL,
         PRIMARY KEY (block, log_index, vault_id),
         FOREIGN KEY (vault_id) REFERENCES vaults(vault_id)
     );
@@ -190,6 +199,7 @@ def create_lagoon_tables():
         log_index BIGINT NOT NULL,
         total_assets NUMERIC(78, 0),
         tx_hash VARCHAR(66) NOT NULL,
+        timestamp TIMESTAMP NOT NULL,
         PRIMARY KEY (block, log_index, vault_id),
         FOREIGN KEY (vault_id) REFERENCES vaults(vault_id)
     );

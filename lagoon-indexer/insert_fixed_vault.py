@@ -18,6 +18,7 @@ def insert_fixed_vaults():
     wld_token_address_anvil = get_lagoon_deployments(31337)["wld_token"]
     lagoon_address_worldchain = get_lagoon_deployments(480)["lagoon_address"]
     wld_token_address_worldchain = get_lagoon_deployments(480)["wld_token"]
+    
     query = """
     INSERT INTO vaults (
         vault_id, chain_id, name, vault_token_symbol, vault_token_address,
@@ -25,7 +26,8 @@ def insert_fixed_vaults():
     ) VALUES (
         %s, %s, %s, %s, %s, %s, %s
     )
-    ON CONFLICT (vault_id) DO NOTHING;
+    ON CONFLICT (vault_id) DO NOTHING
+    RETURNING vault_id;
     """
 
     with psycopg2.connect(**DB_PARAMS) as conn:

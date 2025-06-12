@@ -102,8 +102,7 @@ CREATE TABLE IF NOT EXISTS events (
 
 -- Vault Snapshots -- inserts with each update to total assets
 CREATE TABLE IF NOT EXISTS vault_snapshots (
-  snapshot_id UUID PRIMARY KEY,
-  event_id UUID NOT NULL REFERENCES events(event_id) ON DELETE CASCADE,
+  event_id UUID PRIMARY KEY REFERENCES events(event_id) ON DELETE CASCADE,
   vault_id UUID NOT NULL REFERENCES vaults(vault_id) ON DELETE CASCADE,
   total_assets NUMERIC(78,0) NOT NULL,
   total_shares NUMERIC(78,0) NOT NULL,
@@ -111,14 +110,12 @@ CREATE TABLE IF NOT EXISTS vault_snapshots (
   management_fee bps_type, -- Regular fee on assets.
   performance_fee bps_type, -- Incentive fee on profits.
   apy NUMERIC(10,6),
-  block_number BIGINT,
   CONSTRAINT positive_values CHECK (total_assets>=0 AND total_shares>=0 AND share_price>=0)
 );
 
 -- Deposit Requests
 CREATE TABLE IF NOT EXISTS deposit_requests (
-  request_id UUID PRIMARY KEY,
-  event_id UUID NOT NULL REFERENCES events(event_id) ON DELETE CASCADE,
+  event_id UUID PRIMARY KEY REFERENCES events(event_id) ON DELETE CASCADE,
   vault_id UUID NOT NULL REFERENCES vaults(vault_id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users(user_id),
   sender_address VARCHAR(42),
@@ -133,8 +130,7 @@ CREATE TABLE IF NOT EXISTS deposit_requests (
 
 -- Redeem Requests
 CREATE TABLE IF NOT EXISTS redeem_requests (
-  request_id UUID PRIMARY KEY,
-  event_id UUID NOT NULL REFERENCES events(event_id) ON DELETE CASCADE,
+  event_id UUID NOT NULL PRIMARY KEY REFERENCES events(event_id) ON DELETE CASCADE,
   vault_id UUID NOT NULL REFERENCES vaults(vault_id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users(user_id),
   sender_address VARCHAR(42),
@@ -148,8 +144,7 @@ CREATE TABLE IF NOT EXISTS redeem_requests (
 
 -- Settlements
 CREATE TABLE IF NOT EXISTS settlements (
-  settlement_id UUID PRIMARY KEY,
-  event_id UUID NOT NULL REFERENCES events(event_id) ON DELETE CASCADE,
+  event_id UUID NOT NULL PRIMARY KEY REFERENCES events(event_id) ON DELETE CASCADE,
   vault_id UUID NOT NULL REFERENCES vaults(vault_id) ON DELETE CASCADE,
   settlement_type settlement_type NOT NULL,
   epoch_id BIGINT
@@ -157,8 +152,7 @@ CREATE TABLE IF NOT EXISTS settlements (
 
 -- Transfers
 CREATE TABLE IF NOT EXISTS transfers (
-  transfer_id UUID PRIMARY KEY,
-  event_id UUID NOT NULL REFERENCES events(event_id) ON DELETE CASCADE,
+  event_id UUID PRIMARY KEY REFERENCES events(event_id) ON DELETE CASCADE,
   vault_id UUID NOT NULL REFERENCES vaults(vault_id) ON DELETE CASCADE,
   from_address VARCHAR(42),
   to_address VARCHAR(42),
@@ -172,8 +166,7 @@ CREATE TABLE IF NOT EXISTS transfers (
 -- When return type is deposit, assets is the amount of assets deposited and shares is the amount of shares minted.
 -- When return type is withdrawal, assets is the amount of assets withdrawn and shares is the amount of shares burned.
 CREATE TABLE IF NOT EXISTS vault_returns (
-  return_id UUID PRIMARY KEY,
-  event_id UUID NOT NULL REFERENCES events(event_id) ON DELETE CASCADE,
+  event_id UUID PRIMARY KEY REFERENCES events(event_id) ON DELETE CASCADE,
   vault_id UUID NOT NULL REFERENCES vaults(vault_id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users(user_id),
   return_type vault_return_type NOT NULL,
@@ -184,7 +177,6 @@ CREATE TABLE IF NOT EXISTS vault_returns (
 
 -- User Positions
 CREATE TABLE IF NOT EXISTS user_positions (
-  position_id UUID PRIMARY KEY,
   vault_id UUID NOT NULL REFERENCES vaults(vault_id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users(user_id),
   shares_balance NUMERIC(78,0),
@@ -193,13 +185,12 @@ CREATE TABLE IF NOT EXISTS user_positions (
   total_withdrawn NUMERIC(78,0),
   first_deposit_at TIMESTAMP,
   updated_at TIMESTAMP,
-  UNIQUE(vault_id,user_id),
+  PRIMARY KEY (vault_id, user_id),
   CONSTRAINT non_negative_balance CHECK (shares_balance>=0 AND assets_value>=0)
 );
 
 -- Indexer State
 CREATE TABLE IF NOT EXISTS indexer_state (
-  id UUID PRIMARY KEY,
   vault_id UUID NOT NULL REFERENCES vaults(vault_id) ON DELETE CASCADE,
   chain_id INTEGER NOT NULL REFERENCES chains(chain_id),
   last_processed_block BIGINT NOT NULL,
@@ -208,7 +199,7 @@ CREATE TABLE IF NOT EXISTS indexer_state (
   is_syncing BOOLEAN,
   sync_started_at TIMESTAMP,
   updated_at TIMESTAMP,
-  UNIQUE(vault_id,chain_id)
+  PRIMARY KEY (vault_id, chain_id)
 );
 
 -- Indexes

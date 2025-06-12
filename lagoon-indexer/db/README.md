@@ -15,17 +15,17 @@ The database is designed to track all operations related to Lagoon vaults, inclu
 
 ### Transaction Tables
 
-- `events`: Base table for all blockchain events
+- `events`: Base table for relevant Lagoon events
 - `deposit_requests`: Tracks deposit operations
 - `redeem_requests`: Tracks redemption operations
-- `transfers`: Records token transfers
-- `withdrawals`: Manages withdrawal operations
+- `transfers`: Tracks token transfers
+- `vault_returns`: Tracks withdrawal and deposit events
 - `settlements`: Tracks settlement events
 
 ### State Tables
 
 - `vault_snapshots`: Records vault performance metrics
-- `user_positions`: Tracks user balances and PnL
+- `user_positions`: Tracks user balances
 - `indexer_state`: Monitors blockchain indexing progress
 
 ## Key Features

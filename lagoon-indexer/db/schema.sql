@@ -16,6 +16,7 @@ BEGIN
     'deposit','withdraw','transfer','total_assets_updated','deposit_canceled'
   );
   CREATE TYPE settlement_type AS ENUM ('deposit','redeem');
+  CREATE TYPE vault_return_type AS ENUM ('deposit', 'withdrawal');
   CREATE TYPE transfer_type AS ENUM ('standard','mint','burn');
   CREATE TYPE operation_type AS ENUM ('INSERT','UPDATE','DELETE');
   CREATE TYPE network_type AS ENUM ('mainnet','testnet','local');
@@ -86,20 +87,6 @@ CREATE TABLE IF NOT EXISTS vaults (
   CONSTRAINT valid_deposit_limits CHECK (min_deposit >= 0 AND (max_deposit IS NULL OR max_deposit>min_deposit))
 );
 
--- Vault Snapshots
-CREATE TABLE IF NOT EXISTS vault_snapshots (
-  snapshot_id UUID PRIMARY KEY,
-  vault_id UUID NOT NULL REFERENCES vaults(vault_id) ON DELETE CASCADE,
-  nav NUMERIC(78,18) NOT NULL,
-  total_assets NUMERIC(78,0) NOT NULL,
-  total_shares NUMERIC(78,0) NOT NULL,
-  share_price NUMERIC(78,18) NOT NULL,
-  apy NUMERIC(10,6),
-  block_number BIGINT,
-  recorded_at TIMESTAMP NOT NULL,
-  CONSTRAINT positive_values CHECK (nav>=0 AND total_assets>=0 AND total_shares>=0 AND share_price>=0)
-);
-
 -- Events
 CREATE TABLE IF NOT EXISTS events (
   event_id UUID PRIMARY KEY,
@@ -111,6 +98,21 @@ CREATE TABLE IF NOT EXISTS events (
   transaction_status transaction_status,
   event_timestamp TIMESTAMP NOT NULL,
   UNIQUE(vault_id, block_number, log_index)
+);
+
+-- Vault Snapshots -- inserts with each update to total assets
+CREATE TABLE IF NOT EXISTS vault_snapshots (
+  snapshot_id UUID PRIMARY KEY,
+  event_id UUID NOT NULL REFERENCES events(event_id) ON DELETE CASCADE,
+  vault_id UUID NOT NULL REFERENCES vaults(vault_id) ON DELETE CASCADE,
+  total_assets NUMERIC(78,0) NOT NULL,
+  total_shares NUMERIC(78,0) NOT NULL,
+  share_price NUMERIC(78,18) NOT NULL,
+  management_fee bps_type, -- Regular fee on assets.
+  performance_fee bps_type, -- Incentive fee on profits.
+  apy NUMERIC(10,6),
+  block_number BIGINT,
+  CONSTRAINT positive_values CHECK (total_assets>=0 AND total_shares>=0 AND share_price>=0)
 );
 
 -- Deposit Requests
@@ -166,17 +168,18 @@ CREATE TABLE IF NOT EXISTS transfers (
   CONSTRAINT valid_transfer_addresses CHECK (from_address IS NOT NULL OR to_address IS NOT NULL)
 );
 
--- Withdrawals
-CREATE TABLE IF NOT EXISTS withdrawals (
-  withdrawal_id UUID PRIMARY KEY,
+-- Returns
+-- When return type is deposit, assets is the amount of assets deposited and shares is the amount of shares minted.
+-- When return type is withdrawal, assets is the amount of assets withdrawn and shares is the amount of shares burned.
+CREATE TABLE IF NOT EXISTS vault_returns (
+  return_id UUID PRIMARY KEY,
   event_id UUID NOT NULL REFERENCES events(event_id) ON DELETE CASCADE,
   vault_id UUID NOT NULL REFERENCES vaults(vault_id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users(user_id),
-  receiver_address VARCHAR(42) NOT NULL,
-  assets_withdrawn NUMERIC(78,0) NOT NULL,
-  shares_burned NUMERIC(78,0) NOT NULL,
-  withdrawal_fee NUMERIC(78,0),
-  CONSTRAINT positive_withdrawal CHECK (assets_withdrawn>0 AND shares_burned>0)
+  return_type vault_return_type NOT NULL,
+  assets NUMERIC(78,0) NOT NULL,
+  shares NUMERIC(78,0) NOT NULL,
+  CONSTRAINT positive_return CHECK (assets > 0 AND shares > 0)
 );
 
 -- User Positions
@@ -186,13 +189,9 @@ CREATE TABLE IF NOT EXISTS user_positions (
   user_id UUID NOT NULL REFERENCES users(user_id),
   shares_balance NUMERIC(78,0),
   assets_value NUMERIC(78,0),
-  average_entry_price NUMERIC(78,18),
   total_deposited NUMERIC(78,0),
   total_withdrawn NUMERIC(78,0),
-  realized_pnl NUMERIC(78,0),
-  unrealized_pnl NUMERIC(78,0),
   first_deposit_at TIMESTAMP,
-  last_activity_at TIMESTAMP,
   updated_at TIMESTAMP,
   UNIQUE(vault_id,user_id),
   CONSTRAINT non_negative_balance CHECK (shares_balance>=0 AND assets_value>=0)
@@ -228,7 +227,6 @@ CREATE INDEX IF NOT EXISTS idx_events_txhash ON events(transaction_hash);
 CREATE INDEX IF NOT EXISTS idx_user_positions_vault_user ON user_positions(vault_id, user_id);
 CREATE INDEX IF NOT EXISTS idx_vault_snapshots_block_number ON vault_snapshots(block_number DESC);
 CREATE INDEX IF NOT EXISTS idx_vault_snapshots_vault_id ON vault_snapshots(vault_id);
-CREATE INDEX IF NOT EXISTS idx_vault_snapshots_recorded_at ON vault_snapshots(recorded_at DESC);
 CREATE INDEX IF NOT EXISTS idx_vaults_id ON vaults(vault_id);
 CREATE INDEX IF NOT EXISTS idx_settlements_type_epoch ON settlements(settlement_type, epoch_id);
 

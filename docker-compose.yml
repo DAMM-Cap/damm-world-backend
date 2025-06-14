@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   db:
     image: postgres:15
@@ -34,10 +32,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      indexer-base:
+        condition: service_started
 
-  indexer:
+  indexer-base:
     build: ./lagoon-indexer
-    container_name: lagoon_indexer
+    container_name: lagoon_indexer_base
     restart: always
     env_file:
       - .env

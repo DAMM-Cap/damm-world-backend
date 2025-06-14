@@ -6,7 +6,7 @@ import traceback
 import pandas as pd
 from typing import List, Dict
 from datetime import datetime
-
+import uuid
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from db.db import Database, getEnvDb
 from core.blockchain import getEnvNode
@@ -17,16 +17,22 @@ from db.query.lagoon_events import LagoonEvents, insert_lagoon_events
 # Event Formatter
 class EventFormatter:
     @staticmethod
-    def _common_fields(event: Dict, vault_id: int) -> Dict:
+    def _common_fields(event: Dict, vault_id: str) -> Dict:
+        print("Event keys:", event.keys())
+        print("Event args keys:", event['args'].keys())
         return {
+            'event_id': str(uuid.uuid4()),
             'vault_id': vault_id,
-            'block': int(event['blockNumber']),
+            'event_type': event['event'],
+            'block_number': int(event['blockNumber']),
             'log_index': int(event['logIndex']),
-            'tx_hash': event['transactionHash'].hex(),
+            'transaction_hash': event['transactionHash'].hex(),
+            'transaction_status': 'confirmed',
+            'event_timestamp': event['blockTimestamp']
         }
 
     @staticmethod
-    def format_DepositRequest_data(event: Dict, vault_id: int) -> Dict:
+    def format_DepositRequest_data(event: Dict, vault_id: str) -> Dict:
         data = EventFormatter._common_fields(event, vault_id)
         data.update({
             'request_id': int(event['args']['requestId']),
@@ -41,7 +47,7 @@ class EventFormatter:
         return data
     
     @staticmethod
-    def format_RedeemRequest_data(event: Dict, vault_id: int) -> Dict:
+    def format_RedeemRequest_data(event: Dict, vault_id: str) -> Dict:
         data = EventFormatter._common_fields(event, vault_id)
         data.update({
             'request_id': int(event['args']['requestId']),
@@ -56,7 +62,7 @@ class EventFormatter:
         return data
     
     @staticmethod
-    def format_SettleDeposit_data(event: Dict, vault_id: int) -> Dict:
+    def format_SettleDeposit_data(event: Dict, vault_id: str) -> Dict:
         data = EventFormatter._common_fields(event, vault_id)
         data.update({
             'epoch_id': int(event['args']['epochId']),
@@ -70,7 +76,7 @@ class EventFormatter:
         return data
 
     @staticmethod
-    def format_SettleRedeem_data(event: Dict, vault_id: int) -> Dict:
+    def format_SettleRedeem_data(event: Dict, vault_id: str) -> Dict:
         data = EventFormatter._common_fields(event, vault_id)
         data.update({
             'epoch_id': int(event['args']['epochId']),
@@ -84,7 +90,7 @@ class EventFormatter:
         return data
 
     @staticmethod
-    def format_DepositRequestCanceled_data(event: Dict, vault_id: int) -> Dict:
+    def format_DepositRequestCanceled_data(event: Dict, vault_id: str) -> Dict:
         data = EventFormatter._common_fields(event, vault_id)
         data.update({
             'request_id': int(event['args']['requestId']),
@@ -94,7 +100,7 @@ class EventFormatter:
         return data
 
     @staticmethod
-    def format_Transfer_data(event: Dict, vault_id: int) -> Dict:
+    def format_Transfer_data(event: Dict, vault_id: str) -> Dict:
         data = EventFormatter._common_fields(event, vault_id)
         data.update({
             'from_address': event['args']['from'].lower(),
@@ -105,7 +111,7 @@ class EventFormatter:
         return data
     
     @staticmethod
-    def format_NewTotalAssetsUpdated_data(event: Dict, vault_id: int) -> Dict:
+    def format_NewTotalAssetsUpdated_data(event: Dict, vault_id: str) -> Dict:
         data = EventFormatter._common_fields(event, vault_id)
         data.update({
             'total_assets': int(event['args']['totalAssets']),
@@ -114,7 +120,7 @@ class EventFormatter:
         return data
 
     @staticmethod
-    def format_Withdraw_data(event: Dict, vault_id: int) -> Dict:
+    def format_Withdraw_data(event: Dict, vault_id: str) -> Dict:
         data = EventFormatter._common_fields(event, vault_id)
         data.update({
             'sender': event['args']['sender'].lower(),
@@ -125,21 +131,34 @@ class EventFormatter:
             'timestamp': event['blockTimestamp'],
         })
         return data
+    
+    @staticmethod
+    def format_Deposit_data(event: Dict, vault_id: str) -> Dict:
+        data = EventFormatter._common_fields(event, vault_id)
+        data.update({
+            'sender': event['args']['sender'].lower(),
+            'owner': event['args']['owner'].lower(),
+            'assets': int(event['args']['assets']),
+            'shares': int(event['args']['shares']),
+            'timestamp': event['blockTimestamp'],
+        })
+        return data
 
 # Event Processor
 class EventProcessor:
-    def __init__(self, db: Database, vault_id: int):
+    def __init__(self, db: Database, vault_id: str):
         self.db = db
         self.vault_id = vault_id
         self.EVENT_TABLES = {
-            'DepositRequest': 'lagoon_depositrequest',
-            'RedeemRequest': 'lagoon_redeemrequest',
-            'SettleDeposit': 'lagoon_settledeposit',
-            'SettleRedeem': 'lagoon_settleredeem',
-            'DepositRequestCanceled': 'lagoon_depositrequestcanceled',
-            'Transfer': 'lagoon_transfer',
-            'NewTotalAssetsUpdated': 'lagoon_newtotalassetsupdated',
-            'Withdraw': 'lagoon_withdraw'
+            'DepositRequest': 'deposit_requests',
+            'RedeemRequest': 'redeem_requests',
+            'SettleDeposit': 'settlements',
+            'SettleRedeem': 'settlements',
+            'DepositRequestCanceled': 'deposit_request_canceled',
+            'Transfer': 'transfers',
+            'NewTotalAssetsUpdated': 'indexer_status',
+            'Deposit': 'vault_returns',
+            'Withdraw': 'vault_returns'
         }
 
     def save_to_db_batch(self, event_name: str, event_data_list: List[Dict]):
@@ -155,7 +174,7 @@ class EventProcessor:
             df['status_updated_at'] = pd.to_datetime(df['status_updated_at'], unit='s').dt.strftime('%Y-%m-%d %H:%M:%S')
 
         if table_name:
-            insert_lagoon_events(df, table_name, self.db)
+            insert_lagoon_events(df, table_name, self.db)   
             print(f"Saved {len(event_data_list)} {event_name} events to {table_name}.")
 
     def store_DepositRequest_events(self, events: List[Dict]):
@@ -179,11 +198,11 @@ class EventProcessor:
             event_data_list.append(data)
 
             # UPDATE the matching DepositRequest status
-            LagoonEvents.update_settled_deposit_requests(
+            """ LagoonEvents.update_settled_deposit_requests(
                 db=self.db,
                 vault_id=self.vault_id,
                 settled_timestamp=data['timestamp']
-            )
+            ) """
 
         self.save_to_db_batch('SettleDeposit', event_data_list)
 
@@ -194,11 +213,11 @@ class EventProcessor:
             event_data_list.append(data)
 
             # UPDATE the matching RedeemRequest status
-            LagoonEvents.update_settled_redeem_requests(
+            """ LagoonEvents.update_settled_redeem_requests(
                 db=self.db,
                 vault_id=self.vault_id,
                 settled_timestamp=data['timestamp']
-            )
+            ) """
 
         self.save_to_db_batch('SettleRedeem', event_data_list)
     
@@ -209,12 +228,12 @@ class EventProcessor:
             event_data_list.append(data)
 
             # UPDATE the matching DepositRequest status
-            LagoonEvents.update_canceled_deposit_request(
+            """ LagoonEvents.update_canceled_deposit_request(
                 db=self.db,
                 vault_id=self.vault_id,
                 request_id=data['request_id'],
                 cancel_timestamp=data['timestamp']
-            )
+            ) """
 
         self.save_to_db_batch('DepositRequestCanceled', event_data_list)
 
@@ -239,10 +258,16 @@ class EventProcessor:
         ]
         self.save_to_db_batch('Withdraw', event_data_list)
 
+    def store_Deposit_events(self, events: List[Dict]):
+        event_data_list = [
+            EventFormatter.format_Deposit_data(event, self.vault_id)
+            for event in events
+        ]
+        self.save_to_db_batch('Deposit', event_data_list)
 
 # Lagoon Indexer
 class LagoonIndexer:
-    def __init__(self, lagoon_abi: list, chain_id: int, sleep_time: int, range: int, event_names: list, real_time: bool = True, vault_id: int = None):
+    def __init__(self, lagoon_abi: list, chain_id: int, sleep_time: int, range: int, event_names: list, real_time: bool = True, vault_id: str = None):
         lagoon_deployments = get_lagoon_deployments(chain_id)
         self.first_lagoon_block = lagoon_deployments['genesis_block_lagoon']
         self.lagoon = lagoon_deployments['lagoon_address']
@@ -316,6 +341,8 @@ class LagoonIndexer:
                     self.event_processor.store_NewTotalAssetsUpdated_events(events)
                 elif event_name == 'Withdraw':
                     self.event_processor.store_Withdraw_events(events)
+                elif event_name == 'Deposit':
+                    self.event_processor.store_Deposit_events(events)
             except Exception as e:
                 print(f"Error fetching/storing {event_name} events: {e}")
                 traceback.print_exc()
@@ -328,7 +355,7 @@ class LagoonIndexer:
         Returns 1 if up to date.
         """
         try:
-            last_processed_block = LagoonDbUtils.get_last_processed_block(self.db, self.vault_id, self.first_lagoon_block)
+            last_processed_block = LagoonDbUtils.get_last_processed_block(self.db, self.vault_id, self.chain_id, self.first_lagoon_block)
             print(f"Last processed block: {last_processed_block}")
 
             latest_block = self.get_latest_block_number()
@@ -344,7 +371,7 @@ class LagoonIndexer:
             print(f"Processing block range {from_block} to {from_block + range_to_process}")
 
             self.fetch_and_store(from_block, range_to_process)
-            LagoonDbUtils.update_last_processed_block(self.db, self.vault_id, from_block + range_to_process)
+            LagoonDbUtils.update_last_processed_block(self.db, self.vault_id, self.chain_id, from_block + range_to_process)
             print(f"Updated last processed block to {from_block + range_to_process} in DB.")
 
             if self.real_time and self.sleep_time > 0:

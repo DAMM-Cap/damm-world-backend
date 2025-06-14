@@ -45,7 +45,6 @@ CREATE TABLE IF NOT EXISTS chains (
   network_type network_type NOT NULL,
   explorer_url TEXT,
   native_currency_symbol VARCHAR(10),
-  is_active BOOLEAN,
   created_at TIMESTAMP,
   updated_at TIMESTAMP
 );
@@ -58,9 +57,7 @@ CREATE TABLE IF NOT EXISTS tokens (
   symbol VARCHAR(20) NOT NULL,
   name VARCHAR(100) NOT NULL,
   decimals INTEGER NOT NULL,
-  is_native BOOLEAN,
   created_at TIMESTAMP,
-  updated_at TIMESTAMP,
   UNIQUE(chain_id, address)
 );
 
@@ -69,7 +66,6 @@ CREATE TABLE IF NOT EXISTS vaults (
   vault_id UUID PRIMARY KEY,
   chain_id INTEGER NOT NULL REFERENCES chains(chain_id),
   name VARCHAR(100) NOT NULL,
-  description TEXT,
   vault_token_id UUID NOT NULL REFERENCES tokens(token_id),
   deposit_token_id UUID NOT NULL REFERENCES tokens(token_id),
   strategy_type strategy_type NOT NULL,
@@ -84,7 +80,10 @@ CREATE TABLE IF NOT EXISTS vaults (
   safe_address VARCHAR(42) NOT NULL,
   price_oracle_address VARCHAR(42) NOT NULL,
   whitelist_manager_address VARCHAR(42) NOT NULL,
-  CONSTRAINT valid_deposit_limits CHECK (min_deposit >= 0 AND (max_deposit IS NULL OR max_deposit>min_deposit))
+  fee_receiver_address VARCHAR(42) NOT NULL,
+  fee_registry_address VARCHAR(42) NOT NULL,
+  CONSTRAINT valid_deposit_limits CHECK (min_deposit >= 0 AND (max_deposit IS NULL OR max_deposit>min_deposit)),
+  UNIQUE(chain_id, vault_token_id)
 );
 
 -- Events
@@ -216,7 +215,6 @@ CREATE INDEX IF NOT EXISTS idx_indexer_is_syncing ON indexer_state(is_syncing);
 CREATE INDEX IF NOT EXISTS idx_indexer_last_processed_time ON indexer_state(last_processed_timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_events_txhash ON events(transaction_hash);
 CREATE INDEX IF NOT EXISTS idx_user_positions_vault_user ON user_positions(vault_id, user_id);
-CREATE INDEX IF NOT EXISTS idx_vault_snapshots_block_number ON vault_snapshots(block_number DESC);
 CREATE INDEX IF NOT EXISTS idx_vault_snapshots_vault_id ON vault_snapshots(vault_id);
 CREATE INDEX IF NOT EXISTS idx_vaults_id ON vaults(vault_id);
 CREATE INDEX IF NOT EXISTS idx_settlements_type_epoch ON settlements(settlement_type, epoch_id);
@@ -230,7 +228,6 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_tokens_updated_at BEFORE UPDATE ON tokens FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_chains_updated_at BEFORE UPDATE ON chains FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_vaults_updated_at BEFORE UPDATE ON vaults FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_deposit_requests_updated_at BEFORE UPDATE ON deposit_requests FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

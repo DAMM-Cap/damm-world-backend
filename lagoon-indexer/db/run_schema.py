@@ -2,7 +2,7 @@ from db import getEnvDb
 
 def execute_sql_file() -> bool:
     try:
-        with open("schema.sql", 'r') as f:
+        with open("db/schema.sql", 'r') as f:
             sql = f.read()
         with db.connection.cursor() as cursor:
             cursor.execute(sql)
@@ -23,7 +23,7 @@ def truncate_event_tables():
         "users",
         "chains",
         "tokens",
-        # "vaults",
+        "vaults",
         "events",
         "vault_snapshots",
         "deposit_requests",
@@ -42,7 +42,7 @@ def truncate_event_tables():
         conn.commit()
 
 if __name__ == "__main__":
-    db = getEnvDb()
+    db = getEnvDb('damm-public')
     execute_sql_file()
     truncate_event_tables()
     db.closeConnection()

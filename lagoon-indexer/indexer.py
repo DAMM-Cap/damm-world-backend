@@ -8,6 +8,7 @@ import traceback
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from lagoon_indexer import LagoonIndexer
 from constants.abi.lagoon import LAGOON_ABI
+from db.register_indexer import register_indexer
 
 def main():
     load_dotenv()
@@ -21,9 +22,12 @@ def main():
     parser.add_argument('run_time', type=int, help='Run time in seconds')
 
     args = parser.parse_args()
+
+    vault_id = register_indexer(args.chain_id)
+
     real_time = bool(args.real_time)
 
-    events_to_track = ["DepositRequest", "RedeemRequest", "SettleDeposit", "SettleRedeem", "Withdraw", "DepositRequestCanceled", "Transfer", "NewTotalAssetsUpdated"]
+    events_to_track = ["DepositRequest", "RedeemRequest", "SettleDeposit", "SettleRedeem", "Deposit", "Withdraw", "DepositRequestCanceled", "Transfer", "NewTotalAssetsUpdated"]
 
     indexer = LagoonIndexer(
         lagoon_abi=LAGOON_ABI,
@@ -32,7 +36,7 @@ def main():
         range=args.range,
         event_names=events_to_track,
         real_time=real_time,
-        vault_id=args.vault_id, 
+        vault_id=vault_id, 
     )
 
     start_time = time.time()

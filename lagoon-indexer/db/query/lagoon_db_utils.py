@@ -1,6 +1,8 @@
 from db.db import Database
 import uuid
 from db.utils.lagoon_db_date_utils import LagoonDbDateUtils
+from datetime import timedelta
+from typing import Tuple, Optional
 
 class LagoonDbUtils:
     @staticmethod
@@ -62,3 +64,28 @@ class LagoonDbUtils:
         """
         formatted_ts = LagoonDbDateUtils.get_datetime_formatted_now()
         db.execute(query, (last_block, formatted_ts, formatted_ts, vault_id, chain_id))
+
+    @staticmethod
+    def get_delta_hours_and_apy_12h_ago(db: Database, vault_id: str, current_share_price: float) -> Tuple[Optional[float], Optional[float]]:
+        """
+        Retrieve the share price 12 hours ago for a given vault_id.
+        """
+        query = """
+        SELECT events.event_timestamp, share_price FROM vault_snapshots 
+        JOIN events ON vault_snapshots.event_id = events.event_id 
+        WHERE vault_snapshots.vault_id = %s AND events.event_timestamp <= %s
+        ORDER BY events.event_timestamp DESC
+        LIMIT 1;
+        """
+        formatted_now_ts = LagoonDbDateUtils.get_datetime_formatted_now()
+        formatted_past_ts = LagoonDbDateUtils.format_timestamp(formatted_now_ts - timedelta(hours=12))
+        result = db.queryResponse(query, (vault_id, formatted_past_ts))
+        if result and 'share_price' in result[0] and 'event_timestamp' in result[0]:
+            share_price_12h_ago = float(result[0]['share_price'])
+            snapshot_ts = LagoonDbDateUtils.get_datetime_from_str(result[0]['event_timestamp'])
+            delta_hours = (formatted_now_ts - snapshot_ts).total_seconds() / 3600
+            if share_price_12h_ago > 0 and delta_hours > 0:
+                apy = ((current_share_price / share_price_12h_ago) ** (8760 / delta_hours) - 1) * 100
+                return delta_hours, apy
+        
+        return None, None

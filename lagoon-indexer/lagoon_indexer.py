@@ -6,6 +6,7 @@ import traceback
 import pandas as pd
 from typing import List, Dict, Tuple
 from datetime import datetime
+from web3.contract import Contract
 import uuid
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from db.db import Database, getEnvDb
@@ -15,6 +16,8 @@ from db.query.lagoon_db_utils import LagoonDbUtils
 from db.query.lagoon_events import LagoonEvents
 from db.utils.lagoon_db_date_utils import LagoonDbDateUtils
 from eth_utils import event_abi_to_log_topic
+from utils.rpc import get_w3
+from constants.abi.lagoon import LAGOON_ABI
 
 # Event Formatter
 class EventFormatter:
@@ -99,17 +102,24 @@ class EventFormatter:
         return event_data, transfer_data
     
     @staticmethod
-    def format_NewTotalAssetsUpdated_data(event: Dict, vault_id: str) -> Tuple[Dict, Dict]:
+    def format_NewTotalAssetsUpdated_data(db: Database, lagoon_contract: Contract, event: Dict, vault_id: str) -> Tuple[Dict, Dict]:
         event_data = EventFormatter._common_fields(event, vault_id, 'total_assets_updated')
+        total_shares = lagoon_contract.functions.totalSupply().call()
+        total_assets = int(event['args']['totalAssets'])
+        share_price = total_assets / total_shares if total_shares > 0 else 0
+        delta_hours, apy = LagoonDbUtils.get_delta_hours_and_apy_12h_ago(db, vault_id, share_price)
+        
         new_total_assets_updated_data = {
             'event_id': event_data['event_id'],
             'vault_id': event_data['vault_id'],
-            'total_assets': int(event['args']['totalAssets']),
-            'total_shares': None, #int(event['args']['totalShares']),
-            'share_price': None, #int(event['args']['sharePrice']),
+            'total_assets': total_assets,
+            'total_shares': total_shares,
+            'share_price': share_price,
             'management_fee': None, #int(event['args']['managementFee']),
             'performance_fee': None, #int(event['args']['performanceFee']),
-            'apy': None #int(event['args']['apy'])
+            'high_water_mark': None, #int(event['args']['highWaterMark']),
+            'apy': apy,
+            'delta_hours': delta_hours
         }
         return event_data, new_total_assets_updated_data
 
@@ -128,18 +138,22 @@ class EventFormatter:
     
 # Event Processor
 class EventProcessor:
-    def __init__(self, db: Database, vault_id: str, chain_id: int):
+    def __init__(self, db: Database, lagoon: str, vault_id: str, chain_id: int):
         self.db = db
+        self.lagoon = lagoon
         self.vault_id = vault_id
         self.chain_id = chain_id
         self.EVENT_TABLES = {
             'DepositRequest': 'deposit_requests',
+            'Referral': 'deposit_requests',
             'RedeemRequest': 'redeem_requests',
             'SettleDeposit': 'settlements',
             'SettleRedeem': 'settlements',
             'DepositRequestCanceled': 'deposit_request_canceled',
             'Transfer': 'transfers',
             'NewTotalAssetsUpdated': 'vault_snapshots',
+            'RatesUpdated': 'vault_snapshots',
+            'HighWaterMarkUpdated': 'vault_snapshots',
             'Deposit': 'vault_returns',
             'Withdraw': 'vault_returns'
         }
@@ -242,8 +256,10 @@ class EventProcessor:
     def store_NewTotalAssetsUpdated_events(self, events: List[Dict]):
         event_data_list = []
         new_total_assets_updated_data_list = []
+        w3 = get_w3(self.chain_id)
+        lagoon_contract = w3.eth.contract(address=self.lagoon, abi=LAGOON_ABI)
         for event in events:
-            event_data, new_total_assets_updated_data = EventFormatter.format_NewTotalAssetsUpdated_data(event, self.vault_id)
+            event_data, new_total_assets_updated_data = EventFormatter.format_NewTotalAssetsUpdated_data(self.db, lagoon_contract, event, self.vault_id)
             event_data_list.append(event_data)
             new_total_assets_updated_data_list.append(new_total_assets_updated_data)
 
@@ -307,7 +323,7 @@ class LagoonIndexer:
             abi=lagoon_abi
         )
         self.db = getEnvDb('damm-public')
-        self.event_processor = EventProcessor(self.db, self.vault_id, self.chain_id)
+        self.event_processor = EventProcessor(self.db, self.lagoon, self.vault_id, self.chain_id)
 
     def get_block_ts(self, event: Dict) -> str:
         block_number = int(event['blockNumber'])
@@ -354,6 +370,12 @@ class LagoonIndexer:
                     new_events.append(event_copy)
                 events = new_events  # Replace the list with the new one
 
+                # TODO: Missing events: 
+                # Referral for updating deposit_requests referral field correspondingly
+                # For updating vault_snapshots, in addition to NewTotalAssetsUpdated, we need to track:
+                ## RatesUpdated for updating management_fee and performance_fee in vault_snapshots
+                ## HighWaterMarkUpdated for updating high_water_mark in vault_snapshots
+                
                 if event_name == 'DepositRequest':
                     self.event_processor.store_DepositRequest_events(events)
                 elif event_name == 'RedeemRequest':

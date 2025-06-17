@@ -106,8 +106,6 @@ def insert_vault(db, chain_id):
     
     strategy_type = 'yield_farming'
     status = 'active'
-    management_fee = 0 #TODO
-    performance_fee = 0 #TODO
     min_deposit = 0 #TODO
     max_deposit = None #TODO
     
@@ -123,11 +121,11 @@ def insert_vault(db, chain_id):
     query = """
     INSERT INTO vaults (
         vault_id, chain_id, name, vault_token_id, deposit_token_id,
-        strategy_type, status, management_fee, performance_fee, min_deposit,
+        strategy_type, status, min_deposit,
         max_deposit, administrator_address, safe_address, price_oracle_address,
         whitelist_manager_address, fee_receiver_address, fee_registry_address, created_at
     ) VALUES (
-        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
     )
     ON CONFLICT (chain_id, vault_token_id) DO NOTHING
     RETURNING vault_id;
@@ -143,8 +141,6 @@ def insert_vault(db, chain_id):
                 deposit_token_id,
                 strategy_type,
                 status,
-                management_fee,
-                performance_fee,
                 min_deposit,
                 max_deposit,
                 administrator_address,

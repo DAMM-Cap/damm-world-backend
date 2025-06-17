@@ -71,8 +71,6 @@ CREATE TABLE IF NOT EXISTS vaults (
   deposit_token_id UUID NOT NULL REFERENCES tokens(token_id),
   strategy_type strategy_type NOT NULL,
   status vault_status NOT NULL,
-  management_fee bps_type, -- Regular fee on assets.
-  performance_fee bps_type, -- Incentive fee on profits.
   min_deposit NUMERIC(78,0),
   max_deposit NUMERIC(78,0),
   created_at TIMESTAMP,
@@ -109,7 +107,9 @@ CREATE TABLE IF NOT EXISTS vault_snapshots (
   share_price NUMERIC(78,18),
   management_fee bps_type, -- Regular fee on assets.
   performance_fee bps_type, -- Incentive fee on profits.
-  apy NUMERIC(10,6),
+  high_water_mark NUMERIC(78,18), -- Highest price per share reached.
+  apy NUMERIC(10,6), -- APY in the last delta_hours.
+  delta_hours NUMERIC(10,6), -- Variation in hours for determining the apy.
   CONSTRAINT positive_values CHECK (total_assets>=0 AND total_shares>=0 AND share_price>=0)
 );
 

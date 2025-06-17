@@ -3,12 +3,12 @@ from core.lagoon_deployments import get_lagoon_deployments
 import os
 import sys
 import uuid
-from datetime import datetime
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from constants.abi.lagoon import LAGOON_ABI
 from constants.abi.erc20 import ERC20_ABI
 from utils.rpc import get_w3
 from utils.chain_metadata import get_chain_metadata
+from db.utils.lagoon_db_date_utils import LagoonDbDateUtils
 
 def insert_chain(db, chain_id: int):
     metadata = get_chain_metadata(chain_id)
@@ -20,7 +20,7 @@ def insert_chain(db, chain_id: int):
     network_type = metadata["network_type"]
     native_currency_symbol = metadata["native_currency_symbol"]
     explorer_url = metadata["explorer_url"]
-    created_at = datetime.now()
+    created_at = LagoonDbDateUtils.get_datetime_formatted_now()
 
     query = """
     INSERT INTO chains (
@@ -53,7 +53,7 @@ def insert_token(db, chain_id, token_address):
     decimals = token_contract.functions.decimals().call()
 
     token_id = str(uuid.uuid4())
-    created_at = datetime.now()
+    created_at = LagoonDbDateUtils.get_datetime_formatted_now()
     query = """
     INSERT INTO tokens (
         token_id, chain_id, address, symbol, name, decimals, created_at
@@ -119,7 +119,7 @@ def insert_vault(db, chain_id):
     price_oracle_address = roles_storage[4]
 
     administrator_address = vault_contract.functions.owner().call()
-    created_at = datetime.now()
+    created_at = LagoonDbDateUtils.get_datetime_formatted_now()
     query = """
     INSERT INTO vaults (
         vault_id, chain_id, name, vault_token_id, deposit_token_id,
@@ -173,6 +173,7 @@ def insert_vault(db, chain_id):
     return final_vault_id
 
 def insert_indexer_state(db, vault_id, chain_id):
+    now_ts = LagoonDbDateUtils.get_datetime_formatted_now()
     query = """
     INSERT INTO indexer_state (
     vault_id, chain_id, last_processed_block, last_processed_timestamp, 
@@ -184,7 +185,7 @@ def insert_indexer_state(db, vault_id, chain_id):
     """
     with db.connection as conn:
         with conn.cursor() as cur:
-            cur.execute(query, (vault_id, chain_id, None, datetime.now(), "1.0.0", False, datetime.now(), datetime.now()))
+            cur.execute(query, (vault_id, chain_id, None, now_ts, "1.0.0", False, now_ts, now_ts))
         conn.commit()
     print(f"Indexer state inserted (or already exists).")
 

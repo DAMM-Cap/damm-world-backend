@@ -1,12 +1,14 @@
 from db.db import Database
+from datetime import datetime
 from pandas import DataFrame
 
-def insert_lagoon_events(event_df: DataFrame, table_name: str, db: Database):
-    filtered_cols = [c for c in event_df.columns]
-    cleaned_df = event_df[filtered_cols]
-    db.insertDf(cleaned_df, table_name)
-
 class LagoonEvents:
+    @staticmethod
+    def insert_lagoon_events(db: Database, event_df: DataFrame, table_name: str):
+        filtered_cols = [c for c in event_df.columns]
+        cleaned_df = event_df[filtered_cols]
+        db.insertDf(cleaned_df, table_name)
+
     @staticmethod
     def update_settled_deposit_requests(db: Database, vault_id: str, settled_timestamp: str):
         query = """
@@ -50,29 +52,31 @@ class LagoonEvents:
         conn.commit()
 
     @staticmethod
-    def update_completed_deposit(db: Database, vault_id: str, timestamp: str):
+    def update_completed_deposit(db: Database, vault_id: str, user_id: str, timestamp: datetime):
         query = """
         UPDATE deposit_requests
         SET status = 'completed', updated_at = %s
         WHERE vault_id = %s
+          AND user_id = %s
           AND status = 'settled'
-          AND updated_at <= %s;
+          AND settled_at <= %s;
         """
         conn = db.connection
         with conn.cursor() as cur:
-            cur.execute(query, (timestamp, vault_id, timestamp))
+            cur.execute(query, (timestamp, vault_id, user_id, timestamp))
         conn.commit()
     
     @staticmethod
-    def update_completed_redeem(db: Database, vault_id: str, timestamp: str):
+    def update_completed_redeem(db: Database, vault_id: str, user_id: str, timestamp: datetime):
         query = """
         UPDATE redeem_requests
         SET status = 'completed', updated_at = %s
         WHERE vault_id = %s
+          AND user_id = %s
           AND status = 'settled'
-          AND updated_at <= %s;
+          AND settled_at <= %s;
         """
         conn = db.connection
         with conn.cursor() as cur:
-            cur.execute(query, (timestamp, vault_id, timestamp))
+            cur.execute(query, (timestamp, vault_id, user_id, timestamp))
         conn.commit()

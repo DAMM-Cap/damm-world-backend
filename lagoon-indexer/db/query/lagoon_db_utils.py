@@ -1,6 +1,6 @@
 from db.db import Database
-from datetime import datetime
 import uuid
+from db.utils.lagoon_db_date_utils import LagoonDbDateUtils
 
 class LagoonDbUtils:
     @staticmethod
@@ -22,7 +22,8 @@ class LagoonDbUtils:
             VALUES (%s, %s, %s, %s, %s) 
             RETURNING user_id
             """
-            result = db.queryResponse(query, (user_id, address, chain_id, datetime.now(), datetime.now()))                
+            formatted_ts = LagoonDbDateUtils.get_datetime_formatted_now()
+            result = db.queryResponse(query, (user_id, address, chain_id, formatted_ts, formatted_ts))                
             if result and 'user_id' in result[0]:
                 return result[0]['user_id']
             else:
@@ -55,8 +56,9 @@ class LagoonDbUtils:
         UPDATE indexer_state
         SET
             last_processed_block = %s,
-            last_processed_timestamp = NOW(),
-            updated_at = NOW()
+            last_processed_timestamp = %s,
+            updated_at = %s
         WHERE vault_id = %s AND chain_id = %s
         """
-        db.execute(query, (last_block, vault_id, chain_id))
+        formatted_ts = LagoonDbDateUtils.get_datetime_formatted_now()
+        db.execute(query, (last_block, formatted_ts, formatted_ts, vault_id, chain_id))

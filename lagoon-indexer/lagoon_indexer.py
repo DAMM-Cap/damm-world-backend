@@ -12,7 +12,8 @@ from db.db import Database, getEnvDb
 from core.blockchain import getEnvNode
 from core.lagoon_deployments import get_lagoon_deployments
 from db.query.lagoon_db_utils import LagoonDbUtils
-from db.query.lagoon_events import LagoonEvents, insert_lagoon_events
+from db.query.lagoon_events import LagoonEvents
+from db.utils.lagoon_db_date_utils import LagoonDbDateUtils
 
 # Event Formatter
 class EventFormatter:
@@ -149,7 +150,7 @@ class EventProcessor:
         table_name = 'events' if event_name == 'events' else self.EVENT_TABLES.get(event_name)
 
         if table_name:
-            insert_lagoon_events(df, table_name, self.db)   
+            LagoonEvents.insert_lagoon_events(self.db, df, table_name)
             print(f"Saved {len(event_data_list)} {event_name} events to {table_name}.")
 
     def store_DepositRequest_events(self, events: List[Dict]):
@@ -260,7 +261,8 @@ class EventProcessor:
             LagoonEvents.update_completed_redeem(
                 self.db,
                 self.vault_id,
-                event_data['event_timestamp']
+                return_data['user_id'],
+                LagoonDbDateUtils.get_datetime_from_str(event_data['event_timestamp'])
             )
 
         self.save_to_db_batch('events', event_data_list)
@@ -278,7 +280,8 @@ class EventProcessor:
             LagoonEvents.update_completed_deposit(
                 self.db,
                 self.vault_id,
-                event_data['event_timestamp']
+                return_data['user_id'],
+                LagoonDbDateUtils.get_datetime_from_str(event_data['event_timestamp'])
             )
 
         self.save_to_db_batch('events', event_data_list)
@@ -309,7 +312,7 @@ class LagoonIndexer:
         block_number = int(event['blockNumber'])
         block = self.blockchain.node.eth.get_block(block_number)
         ts = datetime.fromtimestamp(block['timestamp'])
-        return ts.strftime('%Y-%m-%d %H:%M:%S.%f')
+        return LagoonDbDateUtils.format_timestamp(ts)
 
     def get_latest_block_number(self) -> int:
         return self.blockchain.getLatestBlockNumber()

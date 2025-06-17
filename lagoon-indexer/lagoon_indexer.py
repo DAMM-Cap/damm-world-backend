@@ -14,6 +14,7 @@ from core.lagoon_deployments import get_lagoon_deployments
 from db.query.lagoon_db_utils import LagoonDbUtils
 from db.query.lagoon_events import LagoonEvents
 from db.utils.lagoon_db_date_utils import LagoonDbDateUtils
+from eth_utils import event_abi_to_log_topic
 
 # Event Formatter
 class EventFormatter:
@@ -321,11 +322,16 @@ class LagoonIndexer:
         """
         Fetches events of specified type within the given block range.
         """
-        event_filter = self.lagoon_contract.events[event_name].create_filter(
-            fromBlock=from_block,
-            toBlock=to_block
-        )
-        return event_filter.get_all_entries()
+        event_obj = self.lagoon_contract.events[event_name]
+        event_topic = event_abi_to_log_topic(event_obj().abi)
+        logs = self.blockchain.node.eth.get_logs({
+            "fromBlock": from_block,
+            "toBlock": to_block,
+            "address": self.lagoon,
+            "topics": [event_topic]
+        })
+        return [event_obj().process_log(log) for log in logs]
+
 
     def fetch_and_store(self, from_block: int, range: int):
         """

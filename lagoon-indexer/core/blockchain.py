@@ -1,9 +1,6 @@
 from typing import Dict
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
-import os
-import ssl
-import certifi
 from constants.abi.erc20 import ERC20_ABI
 from constants.abi.lagoon import LAGOON_ABI
 from constants.abi.weth9 import WETH9_ABI

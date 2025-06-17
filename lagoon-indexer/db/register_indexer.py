@@ -184,7 +184,7 @@ def insert_indexer_state(db, vault_id, chain_id):
     """
     with db.connection as conn:
         with conn.cursor() as cur:
-            cur.execute(query, (vault_id, chain_id, 0, datetime.now(), "1.0.0", False, datetime.now(), datetime.now()))
+            cur.execute(query, (vault_id, chain_id, None, datetime.now(), "1.0.0", False, datetime.now(), datetime.now()))
         conn.commit()
     print(f"Indexer state inserted (or already exists).")
 

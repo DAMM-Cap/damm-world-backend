@@ -27,6 +27,7 @@ def main():
 
     real_time = bool(args.real_time)
 
+    # TODO: Check if Referral events are needed
     events_to_track = ["DepositRequest", "RedeemRequest", "SettleDeposit", "SettleRedeem", "Deposit", "Withdraw", "DepositRequestCanceled", "Transfer", "NewTotalAssetsUpdated"]
 
     indexer = LagoonIndexer(

@@ -16,8 +16,7 @@ BEGIN
     'deposit','withdraw','transfer','total_assets_updated','deposit_canceled'
   );
   CREATE TYPE settlement_type AS ENUM ('deposit','redeem');
-  CREATE TYPE vault_return_type AS ENUM ('deposit', 'withdrawal');
-  CREATE TYPE transfer_type AS ENUM ('standard','mint','burn');
+  CREATE TYPE vault_return_type AS ENUM ('deposit', 'withdraw');
   CREATE TYPE operation_type AS ENUM ('INSERT','UPDATE','DELETE');
   CREATE TYPE network_type AS ENUM ('mainnet','testnet','local');
   CREATE TYPE strategy_type AS ENUM ('yield_farming','staking','lending','custom');
@@ -30,14 +29,6 @@ END
 $$;
 
 
--- Users
-CREATE TABLE IF NOT EXISTS users (
-  user_id UUID PRIMARY KEY,
-  address VARCHAR(42) UNIQUE NOT NULL,
-  created_at TIMESTAMP,
-  updated_at TIMESTAMP
-);
-
 -- Chains
 CREATE TABLE IF NOT EXISTS chains (
   chain_id INTEGER PRIMARY KEY,
@@ -47,6 +38,16 @@ CREATE TABLE IF NOT EXISTS chains (
   native_currency_symbol VARCHAR(10),
   created_at TIMESTAMP,
   updated_at TIMESTAMP
+);
+
+-- Users
+CREATE TABLE IF NOT EXISTS users (
+  user_id UUID PRIMARY KEY,
+  address VARCHAR(42) UNIQUE NOT NULL,
+  chain_id INTEGER NOT NULL REFERENCES chains(chain_id),
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP,
+  UNIQUE(address, chain_id)
 );
 
 -- Tokens
@@ -104,8 +105,8 @@ CREATE TABLE IF NOT EXISTS vault_snapshots (
   event_id UUID PRIMARY KEY REFERENCES events(event_id) ON DELETE CASCADE,
   vault_id UUID NOT NULL REFERENCES vaults(vault_id) ON DELETE CASCADE,
   total_assets NUMERIC(78,0) NOT NULL,
-  total_shares NUMERIC(78,0) NOT NULL,
-  share_price NUMERIC(78,18) NOT NULL,
+  total_shares NUMERIC(78,0),
+  share_price NUMERIC(78,18),
   management_fee bps_type, -- Regular fee on assets.
   performance_fee bps_type, -- Incentive fee on profits.
   apy NUMERIC(10,6),
@@ -114,6 +115,7 @@ CREATE TABLE IF NOT EXISTS vault_snapshots (
 
 -- Deposit Requests
 CREATE TABLE IF NOT EXISTS deposit_requests (
+  request_id BIGINT,
   event_id UUID PRIMARY KEY REFERENCES events(event_id) ON DELETE CASCADE,
   vault_id UUID NOT NULL REFERENCES vaults(vault_id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users(user_id),
@@ -129,6 +131,7 @@ CREATE TABLE IF NOT EXISTS deposit_requests (
 
 -- Redeem Requests
 CREATE TABLE IF NOT EXISTS redeem_requests (
+  request_id BIGINT,
   event_id UUID NOT NULL PRIMARY KEY REFERENCES events(event_id) ON DELETE CASCADE,
   vault_id UUID NOT NULL REFERENCES vaults(vault_id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users(user_id),
@@ -156,7 +159,6 @@ CREATE TABLE IF NOT EXISTS transfers (
   from_address VARCHAR(42),
   to_address VARCHAR(42),
   amount NUMERIC(78,0) NOT NULL,
-  transfer_type transfer_type,
   CONSTRAINT positive_amount CHECK (amount>=0),
   CONSTRAINT valid_transfer_addresses CHECK (from_address IS NOT NULL OR to_address IS NOT NULL)
 );
@@ -192,7 +194,7 @@ CREATE TABLE IF NOT EXISTS user_positions (
 CREATE TABLE IF NOT EXISTS indexer_state (
   vault_id UUID NOT NULL REFERENCES vaults(vault_id) ON DELETE CASCADE,
   chain_id INTEGER NOT NULL REFERENCES chains(chain_id),
-  last_processed_block BIGINT NOT NULL,
+  last_processed_block BIGINT,
   last_processed_timestamp TIMESTAMP,
   indexer_version VARCHAR(20),
   is_syncing BOOLEAN,

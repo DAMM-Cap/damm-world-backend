@@ -1,3 +1,5 @@
+# Enable Docker Compose to delegate builds to Buildx Bake
+export COMPOSE_BAKE=true
 
 # Stop and remove all containers, networks, volumes
 echo "Stopping and removing all containers and volumes..."

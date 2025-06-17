@@ -1,16 +1,16 @@
 from db import getEnvDb
 
-def execute_sql_file() -> bool:
+def execute_sql_file(file_path: str) -> bool:
     try:
-        with open("db/schema.sql", 'r') as f:
+        with open(file_path, 'r') as f:
             sql = f.read()
         with db.connection.cursor() as cursor:
             cursor.execute(sql)
         db.connection.commit()
-        print(f"Successfully executed SQL file")
+        print(f"Successfully executed SQL file: {file_path}")
         return True
     except Exception as e:
-        print(f"Error executing SQL file: {e}")
+        print(f"Error executing SQL file {file_path}: {e}")
         db.connection.rollback()
         return False
 
@@ -19,20 +19,19 @@ def truncate_event_tables():
     Truncate Lagoon event tables (empty data but keep structure).
     """
     lagoon_tables = [
-        # Skip vaults table
-        "users",
-        "chains",
-        "tokens",
-        "vaults",
-        "events",
-        "vault_snapshots",
+        "user_positions",
+        "vault_returns",
+        "transfers",
+        "settlements",
+        "redeem_requests",
         "deposit_requests",
-        "redeem_requests", 
-        "settlements", 
-        "transfers", 
-        "vault_returns", 
-        "user_positions", 
-        "indexer_state"
+        "vault_snapshots",
+        "events",
+        "vaults",
+        "tokens",
+        "indexer_state",
+        "users",
+        "chains"
     ]
     with db.connection as conn:
         with conn.cursor() as cur:
@@ -43,6 +42,6 @@ def truncate_event_tables():
 
 if __name__ == "__main__":
     db = getEnvDb('damm-public')
-    execute_sql_file()
-    truncate_event_tables()
+    if execute_sql_file("db/schema.sql"):
+        truncate_event_tables()
     db.closeConnection()

@@ -4,7 +4,7 @@ import sys
 import time
 import traceback
 import pandas as pd
-from typing import List, Dict
+from typing import List, Dict, Tuple
 from datetime import datetime
 import uuid
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -17,13 +17,11 @@ from db.query.lagoon_events import LagoonEvents, insert_lagoon_events
 # Event Formatter
 class EventFormatter:
     @staticmethod
-    def _common_fields(event: Dict, vault_id: str) -> Dict:
-        print("Event keys:", event.keys())
-        print("Event args keys:", event['args'].keys())
+    def _common_fields(event: Dict, vault_id: str, event_type: str) -> Dict:
         return {
             'event_id': str(uuid.uuid4()),
             'vault_id': vault_id,
-            'event_type': event['event'],
+            'event_type': event_type,
             'block_number': int(event['blockNumber']),
             'log_index': int(event['logIndex']),
             'transaction_hash': event['transactionHash'].hex(),
@@ -32,123 +30,106 @@ class EventFormatter:
         }
 
     @staticmethod
-    def format_DepositRequest_data(event: Dict, vault_id: str) -> Dict:
-        data = EventFormatter._common_fields(event, vault_id)
-        data.update({
+    def format_DepositRequest_data(db: Database, event: Dict, vault_id: str, chain_id: int) -> Tuple[Dict, Dict]:
+        event_data = EventFormatter._common_fields(event, vault_id, 'deposit_request')
+        deposit_data = {
             'request_id': int(event['args']['requestId']),
-            'controller': event['args']['controller'].lower(),
-            'owner': event['args']['owner'].lower(),
-            'sender': event['args']['sender'].lower(),
+            'event_id': event_data['event_id'],
+            'vault_id': event_data['vault_id'],
+            'user_id': LagoonDbUtils.get_user_id(db, event['args']['owner'].lower(), chain_id),
+            'sender_address': event['args']['sender'].lower(),
+            'controller_address': event['args']['controller'].lower(),
+            'referral_address': event['args'].get('referral', '').lower() if event['args'].get('referral') else None,
             'assets': int(event['args']['assets']),
             'status': 'pending',
-            'timestamp': event['blockTimestamp'],
-            'status_updated_at': event['blockTimestamp']
-        })
-        return data
-    
+            'updated_at': event_data['event_timestamp'],
+            'settled_at': None
+        }
+        return event_data, deposit_data
+
     @staticmethod
-    def format_RedeemRequest_data(event: Dict, vault_id: str) -> Dict:
-        data = EventFormatter._common_fields(event, vault_id)
-        data.update({
+    def format_RedeemRequest_data(db: Database, event: Dict, vault_id: str, chain_id: int) -> Tuple[Dict, Dict]:
+        event_data = EventFormatter._common_fields(event, vault_id, 'redeem_request')
+        redeem_data = {
             'request_id': int(event['args']['requestId']),
-            'controller': event['args']['controller'].lower(),
-            'owner': event['args']['owner'].lower(),
-            'sender': event['args']['sender'].lower(),
+            'event_id': event_data['event_id'],
+            'vault_id': event_data['vault_id'],
+            'user_id': LagoonDbUtils.get_user_id(db, event['args']['owner'].lower(), chain_id),
+            'sender_address': event['args']['sender'].lower(),
+            'controller_address': event['args']['controller'].lower(),
             'shares': int(event['args']['shares']),
             'status': 'pending',
-            'timestamp': event['blockTimestamp'],
-            'status_updated_at': event['blockTimestamp']
-        })
-        return data
+            'updated_at': event_data['event_timestamp'],
+            'settled_at': None
+        }
+        return event_data, redeem_data
     
     @staticmethod
-    def format_SettleDeposit_data(event: Dict, vault_id: str) -> Dict:
-        data = EventFormatter._common_fields(event, vault_id)
-        data.update({
+    def format_Settlement_data(event: Dict, vault_id: str, settlement_type: str) -> Tuple[Dict, Dict]:
+        event_type = 'settle_' + settlement_type
+        event_data = EventFormatter._common_fields(event, vault_id, event_type)
+        settle_data = {
+            'event_id': event_data['event_id'],
+            'vault_id': event_data['vault_id'],
+            'settlement_type': settlement_type,
             'epoch_id': int(event['args']['epochId']),
-            'settled_id': int(event['args']['settledId']),
-            'total_assets': int(event['args']['totalAssets']),
-            'total_supply': int(event['args']['totalSupply']),
-            'assets_deposited': int(event['args']['assetsDeposited']),
-            'shares_minted': int(event['args']['sharesMinted']),
-            'timestamp': event['blockTimestamp'],
-        })
-        return data
+        }
+        return event_data, settle_data
 
     @staticmethod
-    def format_SettleRedeem_data(event: Dict, vault_id: str) -> Dict:
-        data = EventFormatter._common_fields(event, vault_id)
-        data.update({
-            'epoch_id': int(event['args']['epochId']),
-            'settled_id': int(event['args']['settledId']),
-            'total_assets': int(event['args']['totalAssets']),
-            'total_supply': int(event['args']['totalSupply']),
-            'assets_withdrawed': int(event['args']['assetsWithdrawed']),
-            'shares_burned': int(event['args']['sharesBurned']),
-            'timestamp': event['blockTimestamp'],
-        })
-        return data
-
-    @staticmethod
-    def format_DepositRequestCanceled_data(event: Dict, vault_id: str) -> Dict:
-        data = EventFormatter._common_fields(event, vault_id)
-        data.update({
+    def format_DepositRequestCanceled_data(event: Dict, vault_id: str) -> Tuple[Dict, Dict]:
+        event_data = EventFormatter._common_fields(event, vault_id, 'deposit_request_canceled')
+        deposit_request_canceled_data = {
             'request_id': int(event['args']['requestId']),
-            'controller': event['args']['controller'],
-            'timestamp': event['blockTimestamp'],
-        })
-        return data
+        }
+        return event_data, deposit_request_canceled_data
 
     @staticmethod
-    def format_Transfer_data(event: Dict, vault_id: str) -> Dict:
-        data = EventFormatter._common_fields(event, vault_id)
-        data.update({
+    def format_Transfer_data(event: Dict, vault_id: str) -> Tuple[Dict, Dict]:
+        event_data = EventFormatter._common_fields(event, vault_id, 'transfer')
+        transfer_data = {
+            'event_id': event_data['event_id'],
+            'vault_id': event_data['vault_id'],
             'from_address': event['args']['from'].lower(),
             'to_address': event['args']['to'].lower(),
-            'value': int(event['args']['value']),
-            'timestamp': event['blockTimestamp'],
-        })
-        return data
+            'amount': int(event['args']['value']),
+        }
+        return event_data, transfer_data
     
     @staticmethod
-    def format_NewTotalAssetsUpdated_data(event: Dict, vault_id: str) -> Dict:
-        data = EventFormatter._common_fields(event, vault_id)
-        data.update({
+    def format_NewTotalAssetsUpdated_data(event: Dict, vault_id: str) -> Tuple[Dict, Dict]:
+        event_data = EventFormatter._common_fields(event, vault_id, 'total_assets_updated')
+        new_total_assets_updated_data = {
+            'event_id': event_data['event_id'],
+            'vault_id': event_data['vault_id'],
             'total_assets': int(event['args']['totalAssets']),
-            'timestamp': event['blockTimestamp'],
-        })
-        return data
+            'total_shares': None, #int(event['args']['totalShares']),
+            'share_price': None, #int(event['args']['sharePrice']),
+            'management_fee': None, #int(event['args']['managementFee']),
+            'performance_fee': None, #int(event['args']['performanceFee']),
+            'apy': None #int(event['args']['apy'])
+        }
+        return event_data, new_total_assets_updated_data
 
     @staticmethod
-    def format_Withdraw_data(event: Dict, vault_id: str) -> Dict:
-        data = EventFormatter._common_fields(event, vault_id)
-        data.update({
-            'sender': event['args']['sender'].lower(),
-            'receiver': event['args']['receiver'].lower(),
-            'owner': event['args']['owner'].lower(),
+    def format_Return_data(db: Database, event: Dict, vault_id: str, chain_id: int, return_type: str) -> Tuple[Dict, Dict]:
+        event_data = EventFormatter._common_fields(event, vault_id, return_type)
+        return_data = {
+            'event_id': event_data['event_id'],
+            'vault_id': event_data['vault_id'],
+            'user_id': LagoonDbUtils.get_user_id(db, event['args']['owner'].lower(), chain_id),
+            'return_type': return_type,
             'assets': int(event['args']['assets']),
             'shares': int(event['args']['shares']),
-            'timestamp': event['blockTimestamp'],
-        })
-        return data
+        }
+        return event_data, return_data
     
-    @staticmethod
-    def format_Deposit_data(event: Dict, vault_id: str) -> Dict:
-        data = EventFormatter._common_fields(event, vault_id)
-        data.update({
-            'sender': event['args']['sender'].lower(),
-            'owner': event['args']['owner'].lower(),
-            'assets': int(event['args']['assets']),
-            'shares': int(event['args']['shares']),
-            'timestamp': event['blockTimestamp'],
-        })
-        return data
-
 # Event Processor
 class EventProcessor:
-    def __init__(self, db: Database, vault_id: str):
+    def __init__(self, db: Database, vault_id: str, chain_id: int):
         self.db = db
         self.vault_id = vault_id
+        self.chain_id = chain_id
         self.EVENT_TABLES = {
             'DepositRequest': 'deposit_requests',
             'RedeemRequest': 'redeem_requests',
@@ -156,7 +137,7 @@ class EventProcessor:
             'SettleRedeem': 'settlements',
             'DepositRequestCanceled': 'deposit_request_canceled',
             'Transfer': 'transfers',
-            'NewTotalAssetsUpdated': 'indexer_status',
+            'NewTotalAssetsUpdated': 'vault_snapshots',
             'Deposit': 'vault_returns',
             'Withdraw': 'vault_returns'
         }
@@ -165,105 +146,143 @@ class EventProcessor:
         if not event_data_list:
             return
         df = pd.DataFrame(event_data_list)
-        table_name = self.EVENT_TABLES.get(event_name)
-
-        # Convert timestamp columns to datetime objects
-        if 'timestamp' in df.columns:
-            df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s').dt.strftime('%Y-%m-%d %H:%M:%S')
-        if 'status_updated_at' in df.columns:
-            df['status_updated_at'] = pd.to_datetime(df['status_updated_at'], unit='s').dt.strftime('%Y-%m-%d %H:%M:%S')
+        table_name = 'events' if event_name == 'events' else self.EVENT_TABLES.get(event_name)
 
         if table_name:
             insert_lagoon_events(df, table_name, self.db)   
             print(f"Saved {len(event_data_list)} {event_name} events to {table_name}.")
 
     def store_DepositRequest_events(self, events: List[Dict]):
-        event_data_list = [
-            EventFormatter.format_DepositRequest_data(event, self.vault_id)
-            for event in events
-        ]
-        self.save_to_db_batch('DepositRequest', event_data_list)
+        event_rows = []
+        deposit_rows = []
+        for event in events:
+            event_data, deposit_data = EventFormatter.format_DepositRequest_data(self.db, event, self.vault_id, self.chain_id)
+            event_rows.append(event_data)
+            deposit_rows.append(deposit_data)
+
+        self.save_to_db_batch('events', event_rows)
+        self.save_to_db_batch('DepositRequest', deposit_rows)
 
     def store_RedeemRequest_events(self, events: List[Dict]):
-        event_data_list = [
-            EventFormatter.format_RedeemRequest_data(event, self.vault_id)
-            for event in events
-        ]
-        self.save_to_db_batch('RedeemRequest', event_data_list)
+        event_rows = []
+        redeem_rows = []
+        for event in events:
+            event_data, redeem_data = EventFormatter.format_RedeemRequest_data(self.db, event, self.vault_id, self.chain_id)
+            event_rows.append(event_data)
+            redeem_rows.append(redeem_data)
+
+        self.save_to_db_batch('events', event_rows)
+        self.save_to_db_batch('RedeemRequest', redeem_rows)
 
     def store_SettleDeposit_events(self, events: List[Dict]):
         event_data_list = []
+        settle_data_list = []
         for event in events:
-            data = EventFormatter.format_SettleDeposit_data(event, self.vault_id)
-            event_data_list.append(data)
+            event_data, settle_data = EventFormatter.format_Settlement_data(event, self.vault_id, 'deposit')
+            event_data_list.append(event_data)
+            settle_data_list.append(settle_data)
 
             # UPDATE the matching DepositRequest status
-            """ LagoonEvents.update_settled_deposit_requests(
-                db=self.db,
-                vault_id=self.vault_id,
-                settled_timestamp=data['timestamp']
-            ) """
+            LagoonEvents.update_settled_deposit_requests(
+                self.db,
+                self.vault_id,
+                event_data['event_timestamp']
+            )
 
-        self.save_to_db_batch('SettleDeposit', event_data_list)
+        self.save_to_db_batch('events', event_data_list)
+        self.save_to_db_batch('SettleDeposit', settle_data_list)
 
     def store_SettleRedeem_events(self, events: List[Dict]):
         event_data_list = []
+        settle_data_list = []
         for event in events:
-            data = EventFormatter.format_SettleRedeem_data(event, self.vault_id)
-            event_data_list.append(data)
+            event_data, settle_data = EventFormatter.format_Settlement_data(event, self.vault_id, 'redeem')
+            event_data_list.append(event_data)
+            settle_data_list.append(settle_data)
 
             # UPDATE the matching RedeemRequest status
-            """ LagoonEvents.update_settled_redeem_requests(
-                db=self.db,
-                vault_id=self.vault_id,
-                settled_timestamp=data['timestamp']
-            ) """
+            LagoonEvents.update_settled_redeem_requests(
+                self.db,
+                self.vault_id,
+                event_data['event_timestamp']
+            )
 
-        self.save_to_db_batch('SettleRedeem', event_data_list)
+        self.save_to_db_batch('events', event_data_list)
+        self.save_to_db_batch('SettleRedeem', settle_data_list)
     
     def store_DepositRequestCanceled_events(self, events: List[Dict]):
         event_data_list = []
         for event in events:
-            data = EventFormatter.format_DepositRequestCanceled_data(event, self.vault_id)
-            event_data_list.append(data)
+            event_data, deposit_request_canceled_data = EventFormatter.format_DepositRequestCanceled_data(event, self.vault_id)
+            event_data_list.append(event_data)
 
             # UPDATE the matching DepositRequest status
-            """ LagoonEvents.update_canceled_deposit_request(
-                db=self.db,
-                vault_id=self.vault_id,
-                request_id=data['request_id'],
-                cancel_timestamp=data['timestamp']
-            ) """
+            LagoonEvents.update_canceled_deposit_request(
+                self.db,
+                self.vault_id,
+                deposit_request_canceled_data['request_id'],
+                event_data['event_timestamp']
+            )
 
         self.save_to_db_batch('DepositRequestCanceled', event_data_list)
 
     def store_Transfer_events(self, events: List[Dict]):
-        event_data_list = [
-            EventFormatter.format_Transfer_data(event, self.vault_id)
-            for event in events
-        ]
-        self.save_to_db_batch('Transfer', event_data_list)
+        event_data_list = []
+        transfer_data_list = []
+        for event in events:
+            event_data, transfer_data = EventFormatter.format_Transfer_data(event, self.vault_id)
+            event_data_list.append(event_data)
+            transfer_data_list.append(transfer_data)
+
+        self.save_to_db_batch('events', event_data_list)
+        self.save_to_db_batch('Transfer', transfer_data_list)
 
     def store_NewTotalAssetsUpdated_events(self, events: List[Dict]):
-        event_data_list = [
-            EventFormatter.format_NewTotalAssetsUpdated_data(event, self.vault_id)
-            for event in events
-        ]
-        self.save_to_db_batch('NewTotalAssetsUpdated', event_data_list)
+        event_data_list = []
+        new_total_assets_updated_data_list = []
+        for event in events:
+            event_data, new_total_assets_updated_data = EventFormatter.format_NewTotalAssetsUpdated_data(event, self.vault_id)
+            event_data_list.append(event_data)
+            new_total_assets_updated_data_list.append(new_total_assets_updated_data)
+
+        self.save_to_db_batch('events', event_data_list)
+        self.save_to_db_batch('NewTotalAssetsUpdated', new_total_assets_updated_data_list)
 
     def store_Withdraw_events(self, events: List[Dict]):
-        event_data_list = [
-            EventFormatter.format_Withdraw_data(event, self.vault_id)
-            for event in events
-        ]
-        self.save_to_db_batch('Withdraw', event_data_list)
+        event_data_list = []
+        return_data_list = []
+        for event in events:
+            event_data, return_data = EventFormatter.format_Return_data(self.db, event, self.vault_id, self.chain_id, 'withdraw')
+            event_data_list.append(event_data)
+            return_data_list.append(return_data)
+            
+            # UPDATE the matching RedeemRequest status
+            LagoonEvents.update_completed_redeem(
+                self.db,
+                self.vault_id,
+                event_data['event_timestamp']
+            )
+
+        self.save_to_db_batch('events', event_data_list)
+        self.save_to_db_batch('Withdraw', return_data_list)
 
     def store_Deposit_events(self, events: List[Dict]):
-        event_data_list = [
-            EventFormatter.format_Deposit_data(event, self.vault_id)
-            for event in events
-        ]
-        self.save_to_db_batch('Deposit', event_data_list)
+        event_data_list = []
+        return_data_list = []
+        for event in events:
+            event_data, return_data = EventFormatter.format_Return_data(self.db, event, self.vault_id, self.chain_id, 'deposit')
+            event_data_list.append(event_data)
+            return_data_list.append(return_data)
+            
+            # UPDATE the matching DepositRequest status
+            LagoonEvents.update_completed_deposit(
+                self.db,
+                self.vault_id,
+                event_data['event_timestamp']
+            )
+
+        self.save_to_db_batch('events', event_data_list)
+        self.save_to_db_batch('Deposit', return_data_list)
 
 # Lagoon Indexer
 class LagoonIndexer:
@@ -284,12 +303,13 @@ class LagoonIndexer:
             abi=lagoon_abi
         )
         self.db = getEnvDb('damm-public')
-        self.event_processor = EventProcessor(self.db, self.vault_id)
+        self.event_processor = EventProcessor(self.db, self.vault_id, self.chain_id)
 
-    def get_block_ts(self, event: Dict) -> datetime:
+    def get_block_ts(self, event: Dict) -> str:
         block_number = int(event['blockNumber'])
         block = self.blockchain.node.eth.get_block(block_number)
-        return datetime.fromtimestamp(block['timestamp'])
+        ts = datetime.fromtimestamp(block['timestamp'])
+        return ts.strftime('%Y-%m-%d %H:%M:%S.%f')
 
     def get_latest_block_number(self) -> int:
         return self.blockchain.getLatestBlockNumber()

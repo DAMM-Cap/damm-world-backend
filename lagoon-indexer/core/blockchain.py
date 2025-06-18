@@ -1,15 +1,13 @@
 from typing import Dict
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
-import os
-import ssl
-import certifi
 from constants.abi.erc20 import ERC20_ABI
 from constants.abi.lagoon import LAGOON_ABI
 from constants.abi.weth9 import WETH9_ABI
 from constants.abi.optimismMintableERC20 import WLD_ABI
 from constants.abi.safe import SAFE_ABI
 from constants.addresses import DAMM_WORLD_ADDRESSES
+from utils.rpc import get_rpc_url
 
 class Blockchain:
     def __init__(self, rpc_url, chain_id, is_PoA=False):
@@ -89,19 +87,12 @@ class Blockchain:
 
 def getEnvNode(chain_id: int) -> Blockchain:
     if chain_id == 480:
-        return getEnvWorldchainNode()
+        return Blockchain(get_rpc_url(480), 480)
     elif chain_id == 31337:
-        return getEnvAnvilForkedWCNode()
+        return Blockchain(get_rpc_url(31337), 31337)
     elif chain_id == 8453:
-        return getEnvBaseNode()
+        return Blockchain(get_rpc_url(8453), 8453)
+    elif chain_id == 1:
+        return Blockchain(get_rpc_url(1), 1)
     else:
         raise Exception('RPC unavailable for that chain_id')
-
-def getEnvWorldchainNode():
-    return Blockchain(os.getenv('WORLDCHAIN_JSON_RPC'), 480)
-
-def getEnvAnvilForkedWCNode():
-    return Blockchain(os.getenv('ANVIL_FORKED_WC_JSON_RPC'), 31337)
-
-def getEnvBaseNode():
-    return Blockchain(os.getenv('BASE_JSON_RPC'), 8453)

@@ -1,19 +1,15 @@
 from typing import Dict
 from web3 import AsyncWeb3,Web3
 from web3.middleware import async_geth_poa_middleware
-import os
 import ssl
 import certifi
-from typing import List
-
-
 import app.constants.addresses as addresses
 from app.constants.abi.erc20 import ERC20_ABI
 from app.constants.abi.lagoon import LAGOON_ABI
 from app.constants.abi.weth9 import WETH9_ABI
 from app.constants.abi.optimismMintableERC20 import WLD_ABI
 from app.constants.abi.safe import SAFE_ABI
-
+from app.utils.rpc import get_rpc_url
 class Blockchain:
 
     def __init__(self,rpc_url,chain_id,is_PoA=False):
@@ -92,21 +88,14 @@ class Blockchain:
     def get_safe_contract(self):
         return self.node.eth.contract(address=Web3.to_checksum_address(addresses.DAMM_WORLD_ADDRESSES[self.chain_id]['safe']),abi=SAFE_ABI)
     
-def getEnvNode(chain_id:int)->Blockchain:
-    if chain_id==480:
-        return getEnvWorldchainNode()
-    elif chain_id==31337:
-        return getEnvAnvilForkedWCNode()
-    elif chain_id==8453:
-        return getEnvBaseNode()
+def getEnvNode(chain_id: int) -> Blockchain:
+    if chain_id == 480:
+        return Blockchain(get_rpc_url(480), 480)
+    elif chain_id == 31337:
+        return Blockchain(get_rpc_url(31337), 31337)
+    elif chain_id == 8453:
+        return Blockchain(get_rpc_url(8453), 8453)
+    elif chain_id == 1:
+        return Blockchain(get_rpc_url(1), 1)
     else:
         raise Exception('RPC unavailable for that chain_id')
-
-def getEnvWorldchainNode():
-    return Blockchain(os.getenv('WORLDCHAIN_JSON_RPC'),480)
-
-def getEnvAnvilForkedWCNode():
-    return Blockchain(os.getenv('ANVIL_FORKED_WC_JSON_RPC'),31337)
-
-def getEnvBaseNode():
-    return Blockchain(os.getenv('BASE_JSON_RPC'),8453)

@@ -14,7 +14,6 @@ def main():
     load_dotenv()
 
     parser = argparse.ArgumentParser(description='Lagoon Indexer')
-    parser.add_argument('vault_id', type=int, help='Vault ID')
     parser.add_argument('chain_id', type=int, help='Chain ID')
     parser.add_argument('sleep_time', type=int, help='Sleep time between iterations')
     parser.add_argument('range', type=int, help='Block range to process')
@@ -38,7 +37,6 @@ def main():
         "Transfer", 
         "NewTotalAssetsUpdated",
         "RatesUpdated",
-        "HighWaterMarkUpdated",
         "Referral"
     ]
 

@@ -17,12 +17,12 @@ from db.query.lagoon_events import LagoonEvents
 from db.utils.lagoon_db_date_utils import LagoonDbDateUtils
 from eth_utils import event_abi_to_log_topic
 from utils.rpc import get_w3
-from constants.abi.lagoon import LAGOON_ABI
+from decimal import Decimal
 
 # Event Formatter
 class EventFormatter:
     @staticmethod
-    def _common_fields(event: Dict, vault_id: str, event_type: str) -> Dict:
+    def _format_Event_data(event: Dict, vault_id: str, event_type: str) -> Dict:
         return {
             'event_id': str(uuid.uuid4()),
             'vault_id': vault_id,
@@ -36,16 +36,17 @@ class EventFormatter:
 
     @staticmethod
     def format_DepositRequest_data(db: Database, event: Dict, vault_id: str, chain_id: int) -> Tuple[Dict, Dict]:
-        event_data = EventFormatter._common_fields(event, vault_id, 'deposit_request')
+        event_data = EventFormatter._format_Event_data(event, vault_id, 'deposit_request')
+        current_event_ts = LagoonDbDateUtils.get_datetime_from_str(event_data['event_timestamp'])
         deposit_data = {
             'request_id': int(event['args']['requestId']),
             'event_id': event_data['event_id'],
             'vault_id': event_data['vault_id'],
-            'user_id': LagoonDbUtils.get_user_id(db, event['args']['owner'].lower(), chain_id),
+            'user_id': LagoonDbUtils.get_user_id(db, event['args']['owner'].lower(), chain_id, current_event_ts),
             'sender_address': event['args']['sender'].lower(),
             'controller_address': event['args']['controller'].lower(),
             'referral_address': event['args'].get('referral', '').lower() if event['args'].get('referral') else None,
-            'assets': int(event['args']['assets']),
+            'assets': Decimal(event['args']['assets']),
             'status': 'pending',
             'updated_at': event_data['event_timestamp'],
             'settled_at': None
@@ -54,15 +55,16 @@ class EventFormatter:
 
     @staticmethod
     def format_RedeemRequest_data(db: Database, event: Dict, vault_id: str, chain_id: int) -> Tuple[Dict, Dict]:
-        event_data = EventFormatter._common_fields(event, vault_id, 'redeem_request')
+        event_data = EventFormatter._format_Event_data(event, vault_id, 'redeem_request')
+        current_event_ts = LagoonDbDateUtils.get_datetime_from_str(event_data['event_timestamp'])
         redeem_data = {
             'request_id': int(event['args']['requestId']),
             'event_id': event_data['event_id'],
             'vault_id': event_data['vault_id'],
-            'user_id': LagoonDbUtils.get_user_id(db, event['args']['owner'].lower(), chain_id),
+            'user_id': LagoonDbUtils.get_user_id(db, event['args']['owner'].lower(), chain_id, current_event_ts),
             'sender_address': event['args']['sender'].lower(),
             'controller_address': event['args']['controller'].lower(),
-            'shares': int(event['args']['shares']),
+            'shares': Decimal(event['args']['shares']),
             'status': 'pending',
             'updated_at': event_data['event_timestamp'],
             'settled_at': None
@@ -70,20 +72,61 @@ class EventFormatter:
         return event_data, redeem_data
     
     @staticmethod
-    def format_Settlement_data(event: Dict, vault_id: str, settlement_type: str) -> Tuple[Dict, Dict]:
+    def format_Settlement_data(db: Database, event: Dict, vault_id: str, settlement_type: str) -> Tuple[Dict, Dict]:
         event_type = 'settle_' + settlement_type
-        event_data = EventFormatter._common_fields(event, vault_id, event_type)
+        event_data = EventFormatter._format_Event_data(event, vault_id, event_type)
         settle_data = {
             'event_id': event_data['event_id'],
             'vault_id': event_data['vault_id'],
             'settlement_type': settlement_type,
             'epoch_id': int(event['args']['epochId']),
         }
-        return event_data, settle_data
+        total_assets = Decimal(event['args']['totalAssets'])
+        total_shares = Decimal(event['args']['totalSupply'])
+        share_price = Decimal(total_assets / total_shares) if total_shares > 0 else Decimal(0)
+        current_event_ts = LagoonDbDateUtils.get_datetime_from_str(event_data['event_timestamp'])
+        delta_hours, apy, management_fee, performance_fee = LagoonDbUtils.handle_vault_snapshot(
+            db, 
+            vault_id, 
+            total_assets, 
+            total_shares, 
+            share_price, 
+            current_event_ts
+        )
+        snapshot_data = {
+            'event_id': event_data['event_id'],
+            'vault_id': event_data['vault_id'],
+            'total_assets': total_assets,
+            'total_shares': total_shares,
+            'share_price': share_price,
+            'management_fee': management_fee,
+            'performance_fee': performance_fee,
+            'apy': apy,
+            'delta_hours': delta_hours
+        }
+        return event_data, settle_data, snapshot_data
+
+    @staticmethod
+    def format_RatesUpdated_data(event: Dict, vault_id: str) -> Tuple[Dict, Dict]:
+        event_data = EventFormatter._format_Event_data(event, vault_id, 'rates_updated')
+        new_rate = event['args']['newRate']
+        if isinstance(new_rate, (tuple, list)):
+            management_rate, performance_rate = new_rate
+        else:
+            management_rate = Decimal(new_rate['managementRate'])
+            performance_rate = Decimal(new_rate['performanceRate'])
+        
+        rates_updated_data = {
+            'event_id': event_data['event_id'],
+            'vault_id': event_data['vault_id'],
+            'management_rate': management_rate,
+            'performance_rate': performance_rate,
+        }
+        return event_data, rates_updated_data
 
     @staticmethod
     def format_DepositRequestCanceled_data(event: Dict, vault_id: str) -> Tuple[Dict, Dict]:
-        event_data = EventFormatter._common_fields(event, vault_id, 'deposit_request_canceled')
+        event_data = EventFormatter._format_Event_data(event, vault_id, 'deposit_request_canceled')
         deposit_request_canceled_data = {
             'request_id': int(event['args']['requestId']),
         }
@@ -91,50 +134,52 @@ class EventFormatter:
 
     @staticmethod
     def format_Transfer_data(event: Dict, vault_id: str) -> Tuple[Dict, Dict]:
-        event_data = EventFormatter._common_fields(event, vault_id, 'transfer')
+        event_data = EventFormatter._format_Event_data(event, vault_id, 'transfer')
         transfer_data = {
             'event_id': event_data['event_id'],
             'vault_id': event_data['vault_id'],
             'from_address': event['args']['from'].lower(),
             'to_address': event['args']['to'].lower(),
-            'amount': int(event['args']['value']),
+            'amount': Decimal(event['args']['value']),
         }
         return event_data, transfer_data
     
     @staticmethod
-    def format_NewTotalAssetsUpdated_data(db: Database, lagoon_contract: Contract, event: Dict, vault_id: str) -> Tuple[Dict, Dict]:
-        event_data = EventFormatter._common_fields(event, vault_id, 'total_assets_updated')
-        total_shares = lagoon_contract.functions.totalSupply().call()
-        total_assets = int(event['args']['totalAssets'])
-        share_price = total_assets / total_shares if total_shares > 0 else 0
-        delta_hours, apy = LagoonDbUtils.get_delta_hours_and_apy_12h_ago(db, vault_id, share_price)
-        
+    def format_NewTotalAssetsUpdated_data(event: Dict, vault_id: str) -> Tuple[Dict, Dict]:
+        event_data = EventFormatter._format_Event_data(event, vault_id, 'total_assets_updated')
         new_total_assets_updated_data = {
             'event_id': event_data['event_id'],
             'vault_id': event_data['vault_id'],
-            'total_assets': total_assets,
-            'total_shares': total_shares,
-            'share_price': share_price,
-            'management_fee': None, #int(event['args']['managementFee']),
-            'performance_fee': None, #int(event['args']['performanceFee']),
-            'high_water_mark': None, #int(event['args']['highWaterMark']),
-            'apy': apy,
-            'delta_hours': delta_hours
+            'total_assets': Decimal(event['args']['totalAssets'])
         }
         return event_data, new_total_assets_updated_data
 
     @staticmethod
     def format_Return_data(db: Database, event: Dict, vault_id: str, chain_id: int, return_type: str) -> Tuple[Dict, Dict]:
-        event_data = EventFormatter._common_fields(event, vault_id, return_type)
+        event_data = EventFormatter._format_Event_data(event, vault_id, return_type)
+        current_event_ts = LagoonDbDateUtils.get_datetime_from_str(event_data['event_timestamp'])
         return_data = {
             'event_id': event_data['event_id'],
             'vault_id': event_data['vault_id'],
-            'user_id': LagoonDbUtils.get_user_id(db, event['args']['owner'].lower(), chain_id),
+            'user_id': LagoonDbUtils.get_user_id(db, event['args']['owner'].lower(), chain_id, current_event_ts),
             'return_type': return_type,
-            'assets': int(event['args']['assets']),
-            'shares': int(event['args']['shares']),
+            'assets': Decimal(event['args']['assets']),
+            'shares': Decimal(event['args']['shares']),
         }
         return event_data, return_data
+    
+    @staticmethod
+    def format_Referral_data(event: Dict, vault_id: str) -> Tuple[Dict, Dict]:
+        event_data = EventFormatter._format_Event_data(event, vault_id, 'referral')
+        referral_data = {
+            'event_id': event_data['event_id'],
+            'vault_id': event_data['vault_id'],
+            'referral_address': event['args']['referral'].lower(),
+            'owner_address': event['args']['owner'].lower(),
+            'request_id': int(event['args']['requestId']),
+            'assets': Decimal(event['args']['assets'])
+        }
+        return event_data, referral_data
     
 # Event Processor
 class EventProcessor:
@@ -152,10 +197,10 @@ class EventProcessor:
             'DepositRequestCanceled': 'deposit_request_canceled',
             'Transfer': 'transfers',
             'NewTotalAssetsUpdated': 'vault_snapshots',
-            'RatesUpdated': 'vault_snapshots',
-            'HighWaterMarkUpdated': 'vault_snapshots',
+            'RatesUpdated': 'vaults',
             'Deposit': 'vault_returns',
-            'Withdraw': 'vault_returns'
+            'Withdraw': 'vault_returns',
+            'VaultSnapshot': 'vault_snapshots'
         }
 
     def save_to_db_batch(self, event_name: str, event_data_list: List[Dict]):
@@ -190,42 +235,56 @@ class EventProcessor:
         self.save_to_db_batch('events', event_rows)
         self.save_to_db_batch('RedeemRequest', redeem_rows)
 
-    def store_SettleDeposit_events(self, events: List[Dict]):
+    def store_Settlement_events(self, events: List[Dict], settlement_type: str):
+        if settlement_type == 'deposit':
+            update_func = LagoonEvents.update_settled_deposit_requests
+            event_table = 'SettleDeposit'
+        elif settlement_type == 'redeem':
+            update_func = LagoonEvents.update_settled_redeem_requests
+            event_table = 'SettleRedeem'
+        else:
+            raise ValueError(f"Invalid settlement type: {settlement_type}")
+
         event_data_list = []
         settle_data_list = []
+        snapshot_data_list = []
         for event in events:
-            event_data, settle_data = EventFormatter.format_Settlement_data(event, self.vault_id, 'deposit')
+            event_data, settle_data, snapshot_data = EventFormatter.format_Settlement_data(self.db, event, self.vault_id, settlement_type)
             event_data_list.append(event_data)
             settle_data_list.append(settle_data)
+            snapshot_data_list.append(snapshot_data)
 
             # UPDATE the matching DepositRequest status
-            LagoonEvents.update_settled_deposit_requests(
+            update_func(
                 self.db,
                 self.vault_id,
                 event_data['event_timestamp']
             )
 
         self.save_to_db_batch('events', event_data_list)
-        self.save_to_db_batch('SettleDeposit', settle_data_list)
-
-    def store_SettleRedeem_events(self, events: List[Dict]):
-        event_data_list = []
-        settle_data_list = []
-        for event in events:
-            event_data, settle_data = EventFormatter.format_Settlement_data(event, self.vault_id, 'redeem')
-            event_data_list.append(event_data)
-            settle_data_list.append(settle_data)
-
-            # UPDATE the matching RedeemRequest status
-            LagoonEvents.update_settled_redeem_requests(
-                self.db,
-                self.vault_id,
-                event_data['event_timestamp']
-            )
-
-        self.save_to_db_batch('events', event_data_list)
-        self.save_to_db_batch('SettleRedeem', settle_data_list)
+        self.save_to_db_batch(event_table, settle_data_list)
+        # INSERT a new vault_snapshot
+        self.save_to_db_batch('VaultSnapshot', snapshot_data_list)
     
+    def store_RatesUpdated_events(self, events: List[Dict]):
+        event_data_list = []
+        rates_updated_data_list = []
+        for event in events:
+            event_data, rates_updated_data = EventFormatter.format_RatesUpdated_data(event, self.vault_id)
+            event_data_list.append(event_data)
+            rates_updated_data_list.append(rates_updated_data)
+
+            # UPDATE vault rates
+            LagoonEvents.update_vault_rates(
+                self.db,
+                self.vault_id,
+                rates_updated_data['management_rate'],
+                rates_updated_data['performance_rate'],
+                event_data['event_timestamp']
+            )
+        
+        self.save_to_db_batch('events', event_data_list)
+
     def store_DepositRequestCanceled_events(self, events: List[Dict]):
         event_data_list = []
         for event in events:
@@ -240,7 +299,7 @@ class EventProcessor:
                 event_data['event_timestamp']
             )
 
-        self.save_to_db_batch('DepositRequestCanceled', event_data_list)
+        self.save_to_db_batch('events', event_data_list)
 
     def store_Transfer_events(self, events: List[Dict]):
         event_data_list = []
@@ -256,15 +315,20 @@ class EventProcessor:
     def store_NewTotalAssetsUpdated_events(self, events: List[Dict]):
         event_data_list = []
         new_total_assets_updated_data_list = []
-        w3 = get_w3(self.chain_id)
-        lagoon_contract = w3.eth.contract(address=self.lagoon, abi=LAGOON_ABI)
         for event in events:
-            event_data, new_total_assets_updated_data = EventFormatter.format_NewTotalAssetsUpdated_data(self.db, lagoon_contract, event, self.vault_id)
+            event_data, new_total_assets_updated_data = EventFormatter.format_NewTotalAssetsUpdated_data(event, self.vault_id)
             event_data_list.append(event_data)
             new_total_assets_updated_data_list.append(new_total_assets_updated_data)
 
+            # UPDATE the vault total_assets
+            LagoonEvents.update_vault_total_assets(
+                self.db,
+                self.vault_id,
+                new_total_assets_updated_data['total_assets'],
+                LagoonDbDateUtils.get_datetime_from_str(event_data['event_timestamp'])
+            )
+
         self.save_to_db_batch('events', event_data_list)
-        self.save_to_db_batch('NewTotalAssetsUpdated', new_total_assets_updated_data_list)
 
     def store_Withdraw_events(self, events: List[Dict]):
         event_data_list = []
@@ -303,6 +367,25 @@ class EventProcessor:
 
         self.save_to_db_batch('events', event_data_list)
         self.save_to_db_batch('Deposit', return_data_list)
+    
+    def store_Referral_events(self, events: List[Dict]):
+        event_data_list = []
+        deposit_request_referral_data_list = []
+        for event in events:
+            event_data, referral_data = EventFormatter.format_Referral_data(event, self.vault_id)
+            event_data_list.append(event_data)
+            deposit_request_referral_data_list.append(referral_data)
+
+            # UPDATE the matching DepositRequest referral address
+            current_event_ts = LagoonDbDateUtils.get_datetime_from_str(event_data['event_timestamp'])
+            LagoonEvents.update_deposit_request_referral(
+                self.db,
+                self.vault_id,
+                LagoonDbUtils.get_user_id(self.db, referral_data['owner_address'].lower(), self.chain_id, current_event_ts),
+                referral_data['referral_address']
+            )
+
+        self.save_to_db_batch('events', event_data_list)
 
 # Lagoon Indexer
 class LagoonIndexer:
@@ -370,30 +453,28 @@ class LagoonIndexer:
                     new_events.append(event_copy)
                 events = new_events  # Replace the list with the new one
 
-                # TODO: Missing events: 
-                # Referral for updating deposit_requests referral field correspondingly
-                # For updating vault_snapshots, in addition to NewTotalAssetsUpdated, we need to track:
-                ## RatesUpdated for updating management_fee and performance_fee in vault_snapshots
-                ## HighWaterMarkUpdated for updating high_water_mark in vault_snapshots
-                
                 if event_name == 'DepositRequest':
                     self.event_processor.store_DepositRequest_events(events)
                 elif event_name == 'RedeemRequest':
                     self.event_processor.store_RedeemRequest_events(events)
                 if event_name == 'SettleDeposit':
-                    self.event_processor.store_SettleDeposit_events(events)
+                    self.event_processor.store_Settlement_events(events, 'deposit')
                 elif event_name == 'SettleRedeem':
-                    self.event_processor.store_SettleRedeem_events(events)
+                    self.event_processor.store_Settlement_events(events, 'redeem')
                 elif event_name == 'DepositRequestCanceled':
                     self.event_processor.store_DepositRequestCanceled_events(events)
                 elif event_name == 'Transfer':
                     self.event_processor.store_Transfer_events(events)
                 elif event_name == 'NewTotalAssetsUpdated':
                     self.event_processor.store_NewTotalAssetsUpdated_events(events)
+                elif event_name == 'RatesUpdated':
+                    self.event_processor.store_RatesUpdated_events(events)
                 elif event_name == 'Withdraw':
                     self.event_processor.store_Withdraw_events(events)
                 elif event_name == 'Deposit':
                     self.event_processor.store_Deposit_events(events)
+                elif event_name == 'Referral':
+                    self.event_processor.store_Referral_events(events)
             except Exception as e:
                 print(f"Error fetching/storing {event_name} events: {e}")
                 traceback.print_exc()

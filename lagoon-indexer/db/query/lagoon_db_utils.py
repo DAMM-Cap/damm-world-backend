@@ -1,12 +1,15 @@
 from db.db import Database
 import uuid
 from db.utils.lagoon_db_date_utils import LagoonDbDateUtils
-from datetime import timedelta
+from datetime import timedelta, datetime
 from typing import Tuple, Optional
+from decimal import Decimal
+from math import pow
+from db.query.lagoon_events import LagoonEvents
 
 class LagoonDbUtils:
     @staticmethod
-    def get_user_id(db: Database, address: str, chain_id: int) -> str:
+    def get_user_id(db: Database, address: str, chain_id: int, current_event_ts: datetime) -> str:
         """
         Retrieve the user_id for a given address and chain_id. If no user_id is found, creates the user and returns the user_id.
         """
@@ -24,8 +27,7 @@ class LagoonDbUtils:
             VALUES (%s, %s, %s, %s, %s) 
             RETURNING user_id
             """
-            formatted_ts = LagoonDbDateUtils.get_datetime_formatted_now()
-            result = db.queryResponse(query, (user_id, address, chain_id, formatted_ts, formatted_ts))                
+            result = db.queryResponse(query, (user_id, address, chain_id, current_event_ts, current_event_ts))                
             if result and 'user_id' in result[0]:
                 return result[0]['user_id']
             else:
@@ -66,32 +68,112 @@ class LagoonDbUtils:
         db.execute(query, (last_block, formatted_ts, formatted_ts, vault_id, chain_id))
 
     @staticmethod
-    def get_delta_hours_and_apy_12h_ago(db: Database, vault_id: str, current_share_price: float) -> Tuple[Optional[float], Optional[float]]:
+    def get_delta_hours_and_apy_12h_ago(db: Database, vault_id: str, current_share_price: Decimal, current_event_ts: datetime) -> Tuple[Optional[Decimal], Optional[Decimal], Optional[Decimal]]:
         """
         Calculate APY based on the share price from approximately 12 hours ago.
 
         Returns:
-            delta_hours (Optional[float]): Hours between the snapshot and now.
-            apy (Optional[float]): Annualized yield based on share price change.
+            delta_hours (Optional[Decimal]): Hours between the snapshot and now.
+            apy (Optional[Decimal]): Annualized yield based on share price change.
         """
         query = """
         SELECT events.event_timestamp, share_price FROM vault_snapshots 
         JOIN events ON vault_snapshots.event_id = events.event_id 
-        WHERE vault_snapshots.vault_id = %s AND events.event_timestamp <= %s
-        ORDER BY events.event_timestamp DESC
+        WHERE vault_snapshots.vault_id = %s
+        ORDER BY ABS(EXTRACT(EPOCH FROM events.event_timestamp - %s)) ASC
         LIMIT 1;
         """
-        formatted_now_ts = LagoonDbDateUtils.get_datetime_formatted_now()
-        formatted_past_ts = LagoonDbDateUtils.format_timestamp(formatted_now_ts - timedelta(hours=12))
+        formatted_past_ts = LagoonDbDateUtils.format_timestamp(current_event_ts - timedelta(hours=12))
         result = db.queryResponse(query, (vault_id, formatted_past_ts))
         if result and 'share_price' in result[0] and 'event_timestamp' in result[0]:
-            share_price_12h_ago = float(result[0]['share_price'])
+            share_price_12h_ago = Decimal(result[0]['share_price'])
             snapshot_ts = result[0]['event_timestamp']
             if isinstance(snapshot_ts, str):
                 snapshot_ts = LagoonDbDateUtils.get_datetime_from_str(snapshot_ts)
-            delta_hours = (formatted_now_ts - snapshot_ts).total_seconds() / 3600
+            delta_hours = (current_event_ts - snapshot_ts).total_seconds() / 3600
             if share_price_12h_ago > 0 and delta_hours > 0:
-                apy = ((current_share_price / share_price_12h_ago) ** (8760 / delta_hours) - 1) * 100
-                return delta_hours, apy
+                apy = (pow(float(current_share_price / share_price_12h_ago), float(8760 / delta_hours)) - 1) * 100
+                apy = Decimal(str(apy))
+                return delta_hours, apy, snapshot_ts
         
-        return None, None
+        return None, None, None
+    
+    @staticmethod
+    def _calculate_management_fee(assets: Decimal, rate_bps: int, last_ts: datetime, current_ts: datetime) -> Decimal:
+        seconds_in_year = Decimal(365 * 24 * 60 * 60)
+        time_elapsed = Decimal((current_ts - last_ts).total_seconds())
+
+        if time_elapsed <= 0 or assets <= 0 or rate_bps <= 0:
+            return Decimal("0.0")
+
+        fee = assets * Decimal(rate_bps) / Decimal(10_000) * (time_elapsed / seconds_in_year)
+        return fee.quantize(Decimal("0.000001"))
+
+    @staticmethod
+    def get_management_fee(db: Database, vault_id: str, total_assets: Decimal, last_ts: datetime, current_event_ts: datetime) -> Optional[Decimal]:
+        """
+        Get the management fee for a given vault_id.
+        """
+        query = """
+        SELECT management_rate FROM vaults WHERE vault_id = %s
+        """
+        result = db.queryResponse(query, (vault_id,))
+        if result and 'management_rate' in result[0]:
+            management_rate = result[0]['management_rate']
+            management_fee = LagoonDbUtils._calculate_management_fee(total_assets, management_rate, last_ts, current_event_ts)
+            return management_fee
+        else:
+            return None
+    
+    @staticmethod
+    def get_performance_fee(db: Database, vault_id: str, total_shares: Decimal, share_price: Decimal, current_event_ts: datetime) -> Optional[Decimal]:
+        """
+        Get the performance fee for a given vault_id.
+        """
+        query = """
+        SELECT performance_rate, high_water_mark FROM vaults WHERE vault_id = %s
+        """
+        result = db.queryResponse(query, (vault_id,))
+        if result and 'performance_rate' in result[0] and 'high_water_mark' in result[0]:
+            performance_rate = result[0]['performance_rate']
+            high_water_mark = result[0]['high_water_mark']
+            if share_price > high_water_mark:
+                LagoonEvents.update_vault_high_water_mark(db, vault_id, share_price, current_event_ts)
+                profit = (share_price - high_water_mark) * total_shares
+                performance_fee = (profit * performance_rate) / 10000
+                return performance_fee
+            else:
+                return None
+        else:
+            return None
+
+    @staticmethod
+    def handle_vault_snapshot(db: Database, vault_id: str, total_assets: Decimal, total_shares: Decimal, share_price: Decimal, current_event_ts: datetime) -> Tuple[Optional[Decimal], Optional[Decimal], Optional[Decimal], Optional[Decimal]]:
+        """
+        Handle the vault snapshot for a given vault_id.
+        """
+        delta_hours, apy, prev_snapshot_ts = LagoonDbUtils.get_delta_hours_and_apy_12h_ago(
+            db, 
+            vault_id, 
+            share_price, 
+            current_event_ts
+        )
+
+        if prev_snapshot_ts is None:
+            return None, None, None, None
+        
+        management_fee = LagoonDbUtils.get_management_fee(
+            db,
+            vault_id, 
+            total_assets, 
+            prev_snapshot_ts, 
+            current_event_ts
+        )
+        performance_fee = LagoonDbUtils.get_performance_fee(
+            db,
+            vault_id, 
+            total_shares,
+            share_price,
+            current_event_ts
+        )
+        return delta_hours, apy, management_fee, performance_fee

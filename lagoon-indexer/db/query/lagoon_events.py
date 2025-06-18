@@ -1,6 +1,7 @@
 from db.db import Database
 from datetime import datetime
 from pandas import DataFrame
+from decimal import Decimal
 
 class LagoonEvents:
     @staticmethod
@@ -35,6 +36,18 @@ class LagoonEvents:
         conn = db.connection
         with conn.cursor() as cur:
             cur.execute(query, (cancel_timestamp, vault_id, request_id, cancel_timestamp))
+        conn.commit()
+
+    @staticmethod
+    def update_vault_rates(db: Database, vault_id: str, management_rate: int, performance_rate: int, update_timestamp: str):
+        query = """
+        UPDATE vaults
+        SET management_rate = %s, performance_rate = %s, updated_at = %s
+        WHERE vault_id = %s;
+        """
+        conn = db.connection
+        with conn.cursor() as cur:
+            cur.execute(query, (management_rate, performance_rate, update_timestamp, vault_id))
         conn.commit()
 
     @staticmethod
@@ -80,3 +93,43 @@ class LagoonEvents:
         with conn.cursor() as cur:
             cur.execute(query, (timestamp, vault_id, user_id, timestamp))
         conn.commit()
+    
+    @staticmethod
+    def update_vault_total_assets(db: Database, vault_id: str, total_assets: Decimal, update_timestamp: datetime):
+        query = """
+        UPDATE vaults
+        SET total_assets = %s, updated_at = %s
+        WHERE vault_id = %s;
+        """
+        conn = db.connection
+        with conn.cursor() as cur:
+            cur.execute(query, (total_assets, update_timestamp, vault_id))
+        conn.commit()
+
+    @staticmethod
+    def update_vault_high_water_mark(db: Database, vault_id: str, high_water_mark: Decimal, update_timestamp: datetime):
+        query = """
+        UPDATE vaults
+        SET high_water_mark = %s, updated_at = %s
+        WHERE vault_id = %s;
+        """
+        conn = db.connection
+        with conn.cursor() as cur:
+            cur.execute(query, (high_water_mark, update_timestamp, vault_id))
+        conn.commit()
+
+    @staticmethod
+    def update_deposit_request_referral(db: Database, vault_id: str, user_id: str, referral_user_id: str):
+        """
+        Update the referral address for a given deposit request.
+        No ts is required for update since it's an immediate action to the deposit request.
+        """
+        query = """
+        UPDATE deposit_requests
+        SET referral_address = %s
+        WHERE vault_id = %s
+          AND user_id = %s;
+        """
+        conn = db.connection
+        with conn.cursor() as cur:
+            cur.execute(query, (referral_user_id, vault_id, user_id))

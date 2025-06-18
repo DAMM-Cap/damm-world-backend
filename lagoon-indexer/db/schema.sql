@@ -13,7 +13,8 @@ BEGIN
   CREATE TYPE vault_status AS ENUM ('active','paused','closed');
   CREATE TYPE event_type AS ENUM (
     'deposit_request','redeem_request','settle_deposit','settle_redeem',
-    'deposit','withdraw','transfer','total_assets_updated','deposit_canceled'
+    'deposit','withdraw','transfer','total_assets_updated','deposit_canceled',
+    'referral','rates_updated'
   );
   CREATE TYPE settlement_type AS ENUM ('deposit','redeem');
   CREATE TYPE vault_return_type AS ENUM ('deposit', 'withdraw');
@@ -71,6 +72,10 @@ CREATE TABLE IF NOT EXISTS vaults (
   deposit_token_id UUID NOT NULL REFERENCES tokens(token_id),
   strategy_type strategy_type NOT NULL,
   status vault_status NOT NULL,
+  total_assets NUMERIC(78,0) NOT NULL, -- Total assets in the vault, updated by NewTotalAssetsUpdated event.
+  management_rate bps_type, 
+  performance_rate bps_type,
+  high_water_mark NUMERIC(78,18), -- Highest price per share reached.
   min_deposit NUMERIC(78,0),
   max_deposit NUMERIC(78,0),
   created_at TIMESTAMP,
@@ -105,9 +110,8 @@ CREATE TABLE IF NOT EXISTS vault_snapshots (
   total_assets NUMERIC(78,0) NOT NULL,
   total_shares NUMERIC(78,0),
   share_price NUMERIC(78,18),
-  management_fee bps_type, -- Regular fee on assets.
-  performance_fee bps_type, -- Incentive fee on profits.
-  high_water_mark NUMERIC(78,18), -- Highest price per share reached.
+  management_fee NUMERIC(78,18), -- Regular fee on assets.
+  performance_fee NUMERIC(78,18), -- Incentive fee on profits.
   apy NUMERIC(10,6), -- APY in the last delta_hours.
   delta_hours NUMERIC(10,6), -- Variation in hours for determining the apy.
   CONSTRAINT positive_values CHECK (total_assets>=0 AND total_shares>=0 AND share_price>=0)

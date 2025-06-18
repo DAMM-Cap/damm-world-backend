@@ -14,6 +14,8 @@ def get_rpc_url(chain_id):
             return os.getenv('ANVIL_FORKED_WC_JSON_RPC')
         elif chain_id == 8453:
             return os.getenv('BASE_JSON_RPC')
+        elif chain_id == 1:
+            return os.getenv('MAINNET_JSON_RPC')
         else:
             raise Exception('RPC unavailable for that chain_id')
 

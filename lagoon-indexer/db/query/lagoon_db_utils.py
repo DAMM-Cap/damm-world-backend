@@ -68,7 +68,11 @@ class LagoonDbUtils:
     @staticmethod
     def get_delta_hours_and_apy_12h_ago(db: Database, vault_id: str, current_share_price: float) -> Tuple[Optional[float], Optional[float]]:
         """
-        Retrieve the share price 12 hours ago for a given vault_id.
+        Calculate APY based on the share price from approximately 12 hours ago.
+
+        Returns:
+            delta_hours (Optional[float]): Hours between the snapshot and now.
+            apy (Optional[float]): Annualized yield based on share price change.
         """
         query = """
         SELECT events.event_timestamp, share_price FROM vault_snapshots 
@@ -82,7 +86,9 @@ class LagoonDbUtils:
         result = db.queryResponse(query, (vault_id, formatted_past_ts))
         if result and 'share_price' in result[0] and 'event_timestamp' in result[0]:
             share_price_12h_ago = float(result[0]['share_price'])
-            snapshot_ts = LagoonDbDateUtils.get_datetime_from_str(result[0]['event_timestamp'])
+            snapshot_ts = result[0]['event_timestamp']
+            if isinstance(snapshot_ts, str):
+                snapshot_ts = LagoonDbDateUtils.get_datetime_from_str(snapshot_ts)
             delta_hours = (formatted_now_ts - snapshot_ts).total_seconds() / 3600
             if share_price_12h_ago > 0 and delta_hours > 0:
                 apy = ((current_share_price / share_price_12h_ago) ** (8760 / delta_hours) - 1) * 100

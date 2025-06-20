@@ -1,8 +1,8 @@
 from fastapi import Depends, Query, APIRouter
 from app.auth.jwt_auth import get_current_user_jwt
 from db.query.endpoints.lagoon_keeper_txs import get_pending_requests
-from app.core.lagoon_deployments import get_lagoon_deployments
-from app.utils.rpc import get_w3
+from core.lagoon_deployments import get_lagoon_deployments
+from utils.rpc import get_w3
 from app.constants.abi.lagoon import LAGOON_ABI
 from app.constants.abi.erc20 import ERC20_ABI
 

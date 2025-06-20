@@ -1,8 +1,8 @@
 import os
 from dotenv import load_dotenv
-from app.core.lagoon_deployments import get_lagoon_deployments
-from app.utils.rpc import get_w3
-from app.constants.abi.lagoon import LAGOON_ABI
+from core.lagoon_deployments import get_lagoon_deployments
+from utils.rpc import get_w3
+from constants.abi.lagoon import LAGOON_ABI
 
 # Load environment variables
 load_dotenv()
@@ -20,15 +20,6 @@ def get_keeper_credentials(chain_id):
         raise ValueError("KEEPER_ADDRESS and KEEPER_PRIVATE_KEY environment variables are required")
         
     return keeper_address, keeper_private_key
-
-def initialize_w3(chain_id):
-    w3 = get_w3(chain_id)
-
-    # Check if connected
-    if not w3.is_connected():
-        raise ConnectionError(f"Failed to connect to RPC at {w3.provider.endpoint_uri}")
-    
-    return w3
 
 def handle_request(req, contract, keeper_address, keeper_private_key, w3):
     """
@@ -98,7 +89,7 @@ def keeper_txs_handler(chain_id, pending):
         keeper_address, keeper_private_key = get_keeper_credentials(chain_id)
 
         # Initialize Web3 connection
-        w3 = initialize_w3(chain_id)
+        w3 = get_w3(chain_id)
 
         # Get contract
         contract = get_vault_contract(w3, chain_id)

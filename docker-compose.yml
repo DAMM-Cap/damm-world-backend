@@ -61,7 +61,6 @@ services:
     volumes:
       - ./bot:/app
       - ./damm-world-api/app/constants:/app/constants
-      - ./lagoon-indexer:/app/lagoon-indexer
       - ./lagoon-indexer/db:/app/db
       - ./lagoon-indexer/core:/app/core
       - ./lagoon-indexer/utils:/app/utils

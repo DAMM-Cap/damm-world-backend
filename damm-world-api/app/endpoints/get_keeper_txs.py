@@ -19,44 +19,55 @@ def get_new_total_assets(chain_id: int = 480):
 
 def get_keeper_txs(chain_id: int = 480):
     result = get_keepers_pending_txs_metadata(chain_id)
-    if len(result) == 0:
-        return {"txs": []}
+    if len(result["vaults_txs"]) == 0:
+        return {"vaults_txs": []}
     
     """ Result JSON format example:
     result = {
-        "pendingDeposit": True,
-        "pendingRedeem": True,
-        "settledDeposit": [
-            0x0000000000000000000000000000000000000000, 
-            0x0000000000000000000000000000000000000000
+        "vaults_txs": [
+            {
+                "vault_id": "0x123",
+                "pendingDeposit": True,
+                "pendingRedeem": True,
+                "settledDeposit": [
+                    "0x0000000000000000000000000000000000000000", 
+                    "0x0000000000000000000000000000000000000000"
+                ],
+                "valuationManager": "0x123",
+                "safe": "0x123"
+            }
         ]
     } """
     txs = []
     
-    if result["pendingDeposit"] == True or result["pendingRedeem"] == True:
-        realTotalAssets = get_new_total_assets(chain_id)
-        txs.append({
-            "type": "updateNewTotalAssets",
-            "assets": realTotalAssets,
-            "caller": 'valuationManager'
-        })
+    for vault_txs in result["vaults_txs"]:
+        if vault_txs["pendingDeposit"] == True or vault_txs["pendingRedeem"] == True:
+            realTotalAssets = get_new_total_assets(chain_id)
+            txs.append({
+                "type": "updateNewTotalAssets",
+                "assets": realTotalAssets,
+                "caller": vault_txs["valuationManager"],
+                "vault_id": vault_txs["vault_id"]
+            })
 
-        # TODO: Check if the Safe must approve the Vault to transfer the required 
-        # amount of assets for redeem settlement.
+            # TODO: Check if the Safe must approve the Vault to transfer the required 
+            # amount of assets for redeem settlement.
 
-        # Lagoon's deposit settlement includes settle redeem.
-        txs.append({
-            "type": "settleDeposit",
-            "assets": realTotalAssets,
-            "caller": 'safe'
-        })
-    if len(result["settledDeposit"]) > 0:
-        txs.append({
-            "type": "claimSharesOnBehalf",
-            "controllers": result["settledDeposit"],
-            "caller": 'safe'
-        })
-    return {"txs": txs}
+            # Lagoon's deposit settlement includes settle redeem.
+            txs.append({
+                "type": "settleDeposit",
+                "assets": realTotalAssets,
+                "caller": vault_txs["safe"],
+                "vault_id": vault_txs["vault_id"]
+            })
+        if len(vault_txs["settledDeposit"]) > 0:
+            txs.append({
+                "type": "claimSharesOnBehalf",
+                "controllers": vault_txs["settledDeposit"],
+                "caller": vault_txs["safe"],
+                "vault_id": vault_txs["vault_id"]
+            })
+    return {"vaults_txs": txs}
 
 
 @router.get("/lagoon/keeper_txs/test/{chain_id}")

@@ -17,11 +17,11 @@ def run_bot():
         chain_id = int(os.getenv("CHAIN_ID", "480"))
         pending = fetch_keeper_txs(chain_id)
 
-        if not pending:
+        if len(pending['vaults_txs']) == 0:
             print("No pending transactions found")
             return
 
-        print(f"Found {len(pending['txs'])} pending transactions to trigger")
+        print(f"Found {len(pending['vaults_txs'])} pending transactions to trigger")
         
         keeper_txs_handler(chain_id, pending)
     except Exception as e:

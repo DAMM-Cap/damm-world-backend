@@ -16,6 +16,9 @@ def get_data_query(table: str, owner_join_column: bool = False, offset: int = 0,
                 t3.symbol as deposit_token_symbol,
                 t2.address as vault_token_address,
                 t3.address as deposit_token_address,
+                e.transaction_hash as tx_hash,
+                e.block_number as block,
+                e.event_timestamp as timestamp,
                 '{table}' AS source_table
             FROM {table} t
             JOIN vaults v ON t.vault_id = v.vault_id
@@ -39,6 +42,9 @@ def get_data_query(table: str, owner_join_column: bool = False, offset: int = 0,
                 t3.symbol as deposit_token_symbol,
                 t2.address as vault_token_address,
                 t3.address as deposit_token_address,
+                e.transaction_hash as tx_hash,
+                e.block_number as block,
+                e.event_timestamp as timestamp,
                 '{table}' AS source_table
             FROM {table} t
             JOIN vaults v ON t.vault_id = v.vault_id

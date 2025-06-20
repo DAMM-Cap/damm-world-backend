@@ -1,6 +1,6 @@
 from fastapi import Depends, Query, APIRouter
 from app.auth.jwt_auth import get_current_user_jwt
-from db.query.endpoints.lagoon_keeper_txs import get_pending_requests
+from db.query.endpoints.lagoon_keeper_txs import get_keepers_pending_txs_metadata
 from core.lagoon_deployments import get_lagoon_deployments
 from utils.rpc import get_w3
 from app.constants.abi.lagoon import LAGOON_ABI
@@ -18,26 +18,46 @@ def get_new_total_assets(chain_id: int = 480):
     return realTotalAssets
 
 def get_keeper_txs(chain_id: int = 480):
-    result = get_pending_requests(chain_id)
+    result = get_keepers_pending_txs_metadata(chain_id)
     if len(result) == 0:
         return {"txs": []}
     
-    #TODO: Determine if there are any pending requests to settle and add them to the txs list
-    
-    realTotalAssets = get_new_total_assets(chain_id)
-    
+    """ Result JSON format example:
+    result = {
+        "pendingDeposit": True,
+        "pendingRedeem": True,
+        "settledDeposit": [
+            0x0000000000000000000000000000000000000000, 
+            0x0000000000000000000000000000000000000000
+        ]
+    } """
     txs = []
-    txs.append({
-        "type": "updateNewTotalAssets",
-        "assets": realTotalAssets
-    })
     
-    txs.append({
-        "type": "settleDeposit",
-        "assets": realTotalAssets
-    })
-    
+    if result["pendingDeposit"] == True or result["pendingRedeem"] == True:
+        realTotalAssets = get_new_total_assets(chain_id)
+        txs.append({
+            "type": "updateNewTotalAssets",
+            "assets": realTotalAssets,
+            "caller": 'valuationManager'
+        })
+
+        # TODO: Check if the Safe must approve the Vault to transfer the required 
+        # amount of assets for redeem settlement.
+
+        # Lagoon's deposit settlement includes settle redeem.
+        txs.append({
+            "type": "settleDeposit",
+            "assets": realTotalAssets,
+            "caller": 'safe'
+        })
+    if len(result["settledDeposit"]) > 0:
+        txs.append({
+            "type": "claimSharesOnBehalf",
+            "controllers": result["settledDeposit"],
+            "caller": 'safe'
+        })
     return {"txs": txs}
+
 
 @router.get("/lagoon/keeper_txs/test/{chain_id}")
 def read_keeper_txs_test(

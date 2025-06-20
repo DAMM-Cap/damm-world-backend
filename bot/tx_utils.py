@@ -34,8 +34,8 @@ def handle_request(req, contract, keeper_address, keeper_private_key, w3):
     """
     try:
         # Build transaction based on request type
-        if req['type'] == 'deposit':
-            tx = contract.functions.deposit(req['assets']).build_transaction({
+        if req['type'] == 'claimSharesOnBehalf':
+            tx = contract.functions.claimSharesOnBehalf(req['controllers']).build_transaction({
                 'from': keeper_address,
                 'nonce': w3.eth.get_transaction_count(keeper_address),
                 'gas': 300000,
@@ -50,13 +50,6 @@ def handle_request(req, contract, keeper_address, keeper_private_key, w3):
             })
         elif req['type'] == 'settleDeposit':
             tx = contract.functions.settleDeposit(req['assets']).build_transaction({
-                'from': keeper_address,
-                'nonce': w3.eth.get_transaction_count(keeper_address),
-                'gas': 300000,
-                'gasPrice': w3.eth.gas_price,
-            })
-        elif req['type'] == 'withdraw':
-            tx = contract.functions.withdraw(req['assets']).build_transaction({
                 'from': keeper_address,
                 'nonce': w3.eth.get_transaction_count(keeper_address),
                 'gas': 300000,
@@ -82,7 +75,31 @@ def keeper_txs_handler(chain_id, pending):
     
     Args:
         chain_id: Chain ID
-        req: Request object with type and assets
+        pending: Pending transactions metadata
+    
+    Metadata format example:
+    {
+        "txs": [
+            {
+                "type": "updateNewTotalAssets",
+                "assets": realTotalAssets,
+                "caller": "valuationManager"
+            },
+            {
+                "type": "settleDeposit",
+                "assets": realTotalAssets,
+                "caller": "safe"
+            },
+            {
+                "type": "claimSharesOnBehalf",
+                "controllers": [
+                    "0x0000000000000000000000000000000000000000",
+                    "0x0000000000000000000000000000000000000000"
+                ],
+                "caller": "safe"
+            }
+        ]
+    }
     """
     try:
         # Get keeper credentials

@@ -179,3 +179,14 @@ class PaginationUtils:
             JOIN users u ON u.address = %s AND u.chain_id = %s
             WHERE v.chain_id = %s
         """ 
+    
+    @staticmethod
+    def get_integrated_position_count_query() -> str:
+        """Count distinct vaults where the user has position activity on the given chain."""
+        return """
+            SELECT COUNT(DISTINCT vr.vault_id) AS count
+            FROM vault_returns vr
+            JOIN users u ON vr.user_id = u.user_id
+            WHERE u.address = %s
+            AND u.chain_id = %s
+        """

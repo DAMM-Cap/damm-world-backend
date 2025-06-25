@@ -7,7 +7,7 @@ from batch_utils import process_batch_transactions
 
 # Load environment variables
 load_dotenv()
-        
+
 def get_vault_contract(w3, chain_id):
     vault_address = get_lagoon_deployments(chain_id)["lagoon_address"]
     vault_contract = w3.eth.contract(address=vault_address, abi=LAGOON_ABI)

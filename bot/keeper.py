@@ -1,7 +1,8 @@
 import os
 import time
 from dotenv import load_dotenv
-from tx_utils import keeper_txs_handler
+#from tx_utils import keeper_txs_handler
+from safe_tx_utils import keeper_txs_handler
 import requests
 
 load_dotenv()
@@ -23,7 +24,7 @@ def run_bot():
 
         print(f"Found {len(pending['vaults_txs'])} pending transactions to trigger")
         
-        keeper_txs_handler(chain_id, pending)
+        #keeper_txs_handler(chain_id, pending) ## Uncomment this to trigger keeper txs
     except Exception as e:
         print(f"Bot execution failed: {e}")
         raise

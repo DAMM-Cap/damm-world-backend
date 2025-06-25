@@ -1,0 +1,26 @@
+{
+    "name": "safe-tx-runner",
+    "version": "1.0.0",
+    "description": "Safe transaction runner for Lagoon vaults",
+    "scripts": {
+        "send": "ts-node safe-tx/send_safe_tx.ts"
+    },
+    "dependencies": {
+        "@ethersproject/bignumber": "^5.8.0",
+        "@safe-global/api-kit": "^3.0.2",
+        "@safe-global/protocol-kit": "^1.0.0",
+        "@safe-global/safe-core-sdk-types": "^5.1.0",
+        "@safe-global/safe-ethers-lib": "^1.8.0",
+        "@safe-global/safe-core-sdk": "^5.1.0",
+        "dotenv": "^16.3.1",
+        "ethers": "^5.7.2"
+    },
+    "resolutions": {
+        "ethers": "^5.7.2"
+    },
+    "devDependencies": {
+        "ts-node": "11.0.0-beta.1",
+        "tsx": "^4.20.3",
+        "typescript": "^5.8.3"
+    }
+}

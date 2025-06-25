@@ -74,25 +74,29 @@ def get_user_txs(address: str, offset: int, limit: int, chain_id: int = 480) -> 
             "owner_join_column": True,
             "count_query": PaginationUtils.get_count_query,
             "data_query": get_data_query,
-            "query_params": (lowercase_address, chain_id)
+            "count_query_params": (lowercase_address, chain_id),
+            "data_query_params": (lowercase_address, chain_id)
         },
         "redeem_requests": {
             "owner_join_column": True,
             "count_query": PaginationUtils.get_count_query,
             "data_query": get_data_query,
-            "query_params": (lowercase_address, chain_id)
+            "count_query_params": (lowercase_address, chain_id),
+            "data_query_params": (lowercase_address, chain_id)
         },
         "vault_returns": {
             "owner_join_column": True,
             "count_query": PaginationUtils.get_count_query,
             "data_query": get_data_query,
-            "query_params": (lowercase_address, chain_id)
+            "count_query_params": (lowercase_address, chain_id),
+            "data_query_params": (lowercase_address, chain_id)
         },
         "transfers": {
             "owner_join_column": False,
             "count_query": PaginationUtils.get_count_query,
             "data_query": get_data_query,
-            "query_params": (lowercase_address, lowercase_address, contract_addresses, contract_addresses, chain_id)
+            "count_query_params": (lowercase_address, lowercase_address, contract_addresses, contract_addresses, chain_id),
+            "data_query_params": (lowercase_address, lowercase_address, contract_addresses, contract_addresses, chain_id)
         }
     }
 
@@ -100,7 +104,8 @@ def get_user_txs(address: str, offset: int, limit: int, chain_id: int = 480) -> 
     result = PaginationUtils.get_paginated_results(
         db=db,
         tables_config=tables_config,
-        query_params={},  # Not used in this case, params are in table config
+        count_query_params={},  # Not used in this case, params are in table config
+        data_query_params={},  # Not used in this case, params are in table config
         offset=offset,
         limit=limit
     )

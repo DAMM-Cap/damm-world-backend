@@ -3,6 +3,73 @@ from typing import Dict, Any
 from .pagination_utils import PaginationUtils
 
 def get_integrated_position_data_query(offset: int = 0, limit: int = 20) -> str:
+    return f"""
+    WITH user_vaults AS (
+        SELECT DISTINCT dr.vault_id
+        FROM deposit_requests dr
+        JOIN vaults v ON v.vault_id = dr.vault_id
+        WHERE dr.user_id = %s
+        AND v.chain_id = %s
+    ),
+
+    latest_snapshots AS (
+        SELECT DISTINCT ON (vs.vault_id)
+            vs.vault_id, vs.total_assets, vs.total_shares,
+            vs.apy, vs.share_price, ev.event_timestamp
+        FROM vault_snapshots vs
+        JOIN events ev ON ev.event_id = vs.event_id
+        JOIN vaults v ON v.vault_id = vs.vault_id
+        WHERE vs.vault_id IN (SELECT vault_id FROM user_vaults)
+        AND v.chain_id = %s
+        ORDER BY vs.vault_id, ev.event_timestamp DESC
+    ),
+
+    snapshots_12h_ago AS (
+        SELECT DISTINCT ON (vs.vault_id)
+            vs.vault_id, vs.total_assets, vs.apy, ev.event_timestamp
+        FROM vault_snapshots vs
+        JOIN events ev ON ev.event_id = vs.event_id
+        JOIN vaults v ON v.vault_id = vs.vault_id
+        WHERE vs.vault_id IN (SELECT vault_id FROM user_vaults)
+        AND v.chain_id = %s
+        AND ev.event_timestamp <= NOW() - INTERVAL '12 hours'
+        ORDER BY vs.vault_id, ev.event_timestamp DESC
+    ),
+
+    user_returns AS (
+        SELECT vault_id,
+            SUM(CASE WHEN return_type = 'deposit' THEN assets ELSE 0 END) AS total_deposit,
+            SUM(CASE WHEN return_type = 'withdraw' THEN assets ELSE 0 END) AS total_withdraw,
+            SUM(CASE WHEN return_type = 'deposit' THEN shares ELSE 0 END) -
+            SUM(CASE WHEN return_type = 'withdraw' THEN shares ELSE 0 END) AS user_total_shares
+        FROM vault_returns
+        WHERE user_id = %s
+        AND vault_id IN (SELECT vault_id FROM user_vaults)
+        GROUP BY vault_id
+    )
+
+    SELECT
+        ls.vault_id,
+        COALESCE(ls.total_assets, 0) AS latest_tvl,
+        COALESCE(s12.total_assets, 0) AS tvl_12h_ago,
+        COALESCE(ls.apy, 0) AS latest_apy,
+        COALESCE(s12.apy, 0) AS apy_12h_ago,
+        COALESCE(ls.share_price, 0) AS share_price,
+        COALESCE(ur.total_deposit, 0) AS deposit_value,
+        COALESCE(ur.total_withdraw, 0) AS withdrawal_value,
+        COALESCE(ur.total_deposit, 0) - COALESCE(ur.total_withdraw, 0) AS position_value,
+        COALESCE(ur.user_total_shares, 0) AS user_total_shares,
+        COALESCE(ls.total_shares, 0) AS total_shares,
+        COALESCE(ur.total_deposit, 0) AS completed_deposits,
+        COALESCE(ur.total_withdraw, 0) AS completed_redeems
+    FROM latest_snapshots ls
+    LEFT JOIN snapshots_12h_ago s12 ON s12.vault_id = ls.vault_id
+    LEFT JOIN user_returns ur ON ur.vault_id = ls.vault_id
+    OFFSET {offset}
+    LIMIT {limit};
+    """
+
+def get_integrated_position_data_query_exhaustive(offset: int = 0, limit: int = 20) -> str:
     """Custom data query for integrated positions with calculated fields."""
     return f"""
     WITH
@@ -13,9 +80,9 @@ def get_integrated_position_data_query(offset: int = 0, limit: int = 20) -> str:
 
     -- All user vaults on this chain
     user_vaults AS (
-    SELECT DISTINCT vr.vault_id
-    FROM vault_returns vr
-    WHERE vr.user_id = (SELECT user_id FROM resolved_user)
+    SELECT DISTINCT v.vault_id
+    FROM vaults v
+    WHERE v.user_id = (SELECT user_id FROM resolved_user)
     ),
 
     -- Latest snapshot per vault
@@ -179,12 +246,16 @@ def get_integrated_position(address: str, offset: int, limit: int, chain_id: int
             "positions": []
         }
 
+    user_id = user_df.iloc[0]['user_id']
+    print(f"DEBUG: User ID: {user_id}")
+
     # Use the enhanced PaginationUtils for custom queries
     result = PaginationUtils.get_custom_paginated_results(
         db=db,
         count_query=PaginationUtils.get_integrated_position_count_query,
         data_query=get_integrated_position_data_query,
-        query_params=(lowercase_address, chain_id),
+        count_query_params=(user_id, chain_id),
+        data_query_params=(user_id, chain_id, chain_id, chain_id, user_id),
         offset=offset,
         limit=limit,
         result_key="positions"

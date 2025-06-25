@@ -7,7 +7,8 @@ class PaginationUtils:
     def get_paginated_results(
         db: Database,
         tables_config: Dict[str, Dict[str, Any]],
-        query_params: Dict[str, Any],
+        count_query_params: Dict[str, Any],
+        data_query_params: Dict[str, Any],
         offset: int = 0,
         limit: int = 20
     ) -> Dict[str, Any]:
@@ -25,7 +26,8 @@ class PaginationUtils:
                         "query_params": Dict[str, Any]
                     }
                 }
-            query_params: Common parameters for all queries
+            count_query_params: Common parameters for all count queries
+            data_query_params: Common parameters for all data queries
             offset: Pagination offset
             limit: Number of items per page
             
@@ -41,7 +43,7 @@ class PaginationUtils:
             if callable(count_query):
                 count_query = count_query(table_name, config["owner_join_column"])
             
-            count_params = config["query_params"]
+            count_params = config["count_query_params"]
             count_df = db.frameResponse(count_query, count_params)
             
             if not count_df.empty:
@@ -52,7 +54,7 @@ class PaginationUtils:
             if callable(data_query):
                 data_query = data_query(table_name, config["owner_join_column"], offset, limit)
             
-            data_params = config["query_params"]
+            data_params = config["data_query_params"]
             data_df = db.frameResponse(data_query, data_params)
             
             if not data_df.empty:
@@ -78,7 +80,8 @@ class PaginationUtils:
         db: Database,
         count_query: Union[str, Callable],
         data_query: Union[str, Callable],
-        query_params: Tuple,
+        count_query_params: Tuple,
+        data_query_params: Tuple,
         offset: int = 0,
         limit: int = 20,
         result_key: str = "results"
@@ -90,7 +93,8 @@ class PaginationUtils:
             db: Database connection
             count_query: SQL query string or callable that returns count query
             data_query: SQL query string or callable that returns data query
-            query_params: Parameters for the queries
+            count_query_params: Parameters for the count query
+            data_query_params: Parameters for the data query
             offset: Pagination offset
             limit: Number of items per page
             result_key: Key name for the results in the response
@@ -104,7 +108,7 @@ class PaginationUtils:
         else:
             count_query_str = count_query
             
-        count_df = db.frameResponse(count_query_str, query_params)
+        count_df = db.frameResponse(count_query_str, count_query_params)
         
         total_count = 0
         if not count_df.empty:
@@ -124,7 +128,7 @@ class PaginationUtils:
         else:
             data_query_str = data_query
             
-        data_df = db.frameResponse(data_query_str, query_params)
+        data_df = db.frameResponse(data_query_str, data_query_params)
         
         results = []
         if not data_df.empty:
@@ -181,7 +185,7 @@ class PaginationUtils:
         """ 
     
     @staticmethod
-    def get_integrated_position_count_query() -> str:
+    def get_integrated_position_count_query_exhaustive() -> str:
         """Count distinct vaults where the user has position activity on the given chain."""
         return """
             SELECT COUNT(DISTINCT vr.vault_id) AS count
@@ -189,4 +193,14 @@ class PaginationUtils:
             JOIN users u ON vr.user_id = u.user_id
             WHERE u.address = %s
             AND u.chain_id = %s
+        """
+
+    @staticmethod
+    def get_integrated_position_count_query() -> str:
+        return """
+            SELECT COUNT(DISTINCT vr.vault_id) AS count
+            FROM vault_returns vr
+            JOIN vaults v ON v.vault_id = vr.vault_id
+            WHERE vr.user_id = %s
+            AND v.chain_id = %s
         """

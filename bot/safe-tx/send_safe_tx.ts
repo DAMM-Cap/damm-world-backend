@@ -1,7 +1,9 @@
 import Safe, { EthersAdapter } from "@safe-global/protocol-kit";
+import { SafeTransaction } from "@safe-global/safe-core-sdk-types";
 import dotenv from "dotenv";
 import { ethers } from "ethers";
 import { buildSafeTransactionData } from "./handlers/build_safe_tx";
+import { simulateSafeTransaction } from "./handlers/simulate_safe_tx";
 
 dotenv.config();
 
@@ -16,15 +18,19 @@ if (args.length < 3) {
   console.error(
     "Usage: ts-node send_safe_tx.ts <method> <contract> <args...> [repeat...]"
   );
-  process.exit(1);
+  //process.exit(1);
 }
 
 function parseBatchedCalls(argv: string[]): {
   method: string;
   contract: string;
   args: string[];
-}[] {
-  const result = [];
+}[][] {
+  const result: { method: string; contract: string; args: string[] }[][] = [
+    [],
+    [],
+    [],
+  ];
   let i = 0;
 
   while (i < argv.length) {
@@ -45,7 +51,14 @@ function parseBatchedCalls(argv: string[]): {
       i++;
     }
 
-    result.push({ method, contract, args: currentArgs });
+    // Txs are single triggered in case of updateNewTotalAssets and settleDeposit, and batched otherwise
+    if (method === "updateNewTotalAssets") {
+      result[0].push({ method, contract, args: currentArgs });
+    } else if (method === "settleDeposit") {
+      result[1].push({ method, contract, args: currentArgs });
+    } else {
+      result[2].push({ method, contract, args: currentArgs });
+    }
   }
 
   return result;
@@ -63,7 +76,7 @@ function parseBatchedCalls(argv: string[]): {
 
     // Get network info
     const network = await provider.getNetwork();
-    console.log(`🔗 Network: ${network.name} (Chain ID: ${network.chainId})`);
+    console.log(`Network: ${network.name} (Chain ID: ${network.chainId})`);
 
     // Check if the Safe address is actually a contract
     const code = await provider.getCode(process.env.SAFE_ADDRESS!);
@@ -72,7 +85,7 @@ function parseBatchedCalls(argv: string[]): {
         `No contract found at address ${process.env.SAFE_ADDRESS!}`
       );
     }
-    console.log(`Contract found at ${process.env.SAFE_ADDRESS!}`);
+    console.log(`Contract found at Safe address ${process.env.SAFE_ADDRESS!}`);
 
     // Try to create Safe SDK with minimal configuration
     const safeSdk = await Safe.create({
@@ -82,17 +95,47 @@ function parseBatchedCalls(argv: string[]): {
 
     const parsedCalls = parseBatchedCalls(args);
 
-    const txs = parsedCalls.map(({ method, contract, args }) =>
-      buildSafeTransactionData(method, args, contract)
+    const txs = parsedCalls.map((txs) =>
+      txs.map(({ method, contract, args }) =>
+        buildSafeTransactionData(method, args, contract)
+      )
     );
 
-    const safeTx = await safeSdk.createTransaction({
-      safeTransactionData: txs,
-    });
-    await safeSdk.signTransaction(safeTx);
+    const justSimulate = process.env.JUST_SIMULATE === "true";
 
-    const execTx = await safeSdk.executeTransaction(safeTx);
-    console.log("Batched Safe tx sent:", execTx.hash);
+    let safeTx: SafeTransaction[] = [];
+    for (let i = 0; i < txs.length; i++) {
+      if (txs[i].length === 0) {
+        continue;
+      }
+      console.log("Creating transaction... ");
+      safeTx[i] = await safeSdk.createTransaction({
+        safeTransactionData: txs[i],
+      });
+      await safeSdk.signTransaction(safeTx[i]);
+
+      console.log("Simulating transaction...");
+      const success = await simulateSafeTransaction({
+        provider,
+        vaultAddress: process.env.VAULT_ADDRESS!,
+        safeAddress: process.env.SAFE_ADDRESS!,
+        safeTx: safeTx[i],
+      });
+
+      if (!success) {
+        console.error("Simulation failed. Aborting execution.");
+        return;
+      }
+
+      console.log("Simulation successful, proceeding with execution...");
+
+      if (!justSimulate) {
+        const execTx = await safeSdk.executeTransaction(safeTx[i]);
+        console.log("Batched Safe tx sent:", execTx.hash);
+      } else {
+        console.log("Just Simulated!");
+      }
+    }
   } catch (e) {
     console.error("Error in send_safe_tx.ts:");
 
@@ -104,6 +147,7 @@ function parseBatchedCalls(argv: string[]): {
       console.error(String(e));
     }
 
-    process.exit(1);
+    return;
+    //process.exit(1);
   }
 })();

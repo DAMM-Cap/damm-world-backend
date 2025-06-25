@@ -62,11 +62,11 @@ def keeper_txs_handler(chain_id, pending):
             method = req["type"]
             contract = get_lagoon_deployments(chain_id)["lagoon_address"]
 
-            if method == "settleDeposit":
+            if method == "updateNewTotalAssets":
                 assets = str(req["assets"])
                 batched_args.extend([method, contract, assets])
 
-            elif method == "updateNewTotalAssets":
+            elif method == "settleDeposit":
                 assets = str(req["assets"])
                 batched_args.extend([method, contract, assets])
 

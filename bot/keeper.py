@@ -24,7 +24,7 @@ def run_bot():
 
         print(f"Found {len(pending['vaults_txs'])} pending transactions to trigger")
         
-        #keeper_txs_handler(chain_id, pending) ## Uncomment this to trigger keeper txs
+        keeper_txs_handler(chain_id, pending) ## Uncomment this to trigger keeper txs
     except Exception as e:
         print(f"Bot execution failed: {e}")
         raise

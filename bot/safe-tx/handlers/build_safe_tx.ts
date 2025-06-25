@@ -2,11 +2,6 @@ import { Interface } from "@ethersproject/abi";
 import { BigNumber } from "@ethersproject/bignumber";
 
 import { LAGOON_ABI } from "./lagoon_abi.ts";
-console.log("✅ ABI loaded:", typeof LAGOON_ABI);
-console.log(
-  "ABI length:",
-  Array.isArray(LAGOON_ABI) ? LAGOON_ABI.length : "Not an array"
-);
 
 export function buildSafeTransactionData(
   method: string,

@@ -27,5 +27,12 @@ DAMM_WORLD_ADDRESSES = {
         'safe': '0xC868BFb240Ed207449Afe71D2ecC781D5E10C85C',
         'wld_token': '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
         'silo': '0x924359b91eae607ba539ff6dab5bb914956ae624'
+    },
+    11155111: {
+        'lagoon': '0xE5A8387DcAe3FD00C51f84c8c7Bbc07f1Aeb4255',
+        'safe': '0x55417443e6C0947Bb471c6C2E12e64bD2db4510c',
+        'wrapped_native_weth_token': '0xdd13E55209Fd76AfE204dBda4007C227904f0a81',
+        'wld_token': '0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9',
+        'silo': '0xD669b15e38d61D9cf3fF87d773ab8924ecD42bdD'
     }
 }

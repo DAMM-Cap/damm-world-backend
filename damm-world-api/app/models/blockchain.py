@@ -97,5 +97,7 @@ def getEnvNode(chain_id: int) -> Blockchain:
         return Blockchain(get_rpc_url(8453), 8453)
     elif chain_id == 1:
         return Blockchain(get_rpc_url(1), 1)
+    elif chain_id == 11155111:
+        return Blockchain(get_rpc_url(11155111), 11155111)
     else:
         raise Exception('RPC unavailable for that chain_id')

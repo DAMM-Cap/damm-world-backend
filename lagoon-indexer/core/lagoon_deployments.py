@@ -26,6 +26,14 @@ def get_lagoon_deployments(chain_id: int):
             "wld_token": Web3.to_checksum_address("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"),
             "silo": Web3.to_checksum_address("0x3a84d637f6079c39e3be13ae1d0843d4274789d5")
         },
+        11155111: {
+            "genesis_block_lagoon": 8635237,
+            "lagoon_address": Web3.to_checksum_address("0xE5A8387DcAe3FD00C51f84c8c7Bbc07f1Aeb4255"),
+            "safe_address": Web3.to_checksum_address("0x55417443e6C0947Bb471c6C2E12e64bD2db4510c"),
+            "wrapped_native_weth_token": Web3.to_checksum_address("0xdd13E55209Fd76AfE204dBda4007C227904f0a81"),
+            "wld_token": Web3.to_checksum_address("0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9"),
+            "silo": Web3.to_checksum_address("0xD669b15e38d61D9cf3fF87d773ab8924ecD42bdD")
+        },
         1: { # Testing Lagoon 9Summits flagship ETH vault deployed on mainnet
             "genesis_block_lagoon": 21137095,
             "lagoon_address": Web3.to_checksum_address("0x07ed467acd4ffd13023046968b0859781cb90d9b"),

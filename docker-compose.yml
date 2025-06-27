@@ -49,8 +49,9 @@ services:
         condition: service_healthy
     #command: ["python", "indexer.py", "480", "10", "2000", "1", "60"] ## Run on Worldchain
     #command: ["python", "indexer.py", "31337", "10", "2000", "1", "60"] ## Run on Anvil local fork
-    command: ["python", "indexer.py", "8453", "10", "2000", "1", "60"] ## Run on Base
+    #command: ["python", "indexer.py", "8453", "10", "2000", "1", "60"] ## Run on Base
     #command: ["python", "indexer.py", "1", "10", "2000", "1", "60"] ## Run on Mainnet
+    command: ["python", "indexer.py", "11155111", "10", "2000", "1", "60"] ## Run on Sepolia
 
   lagoon-bot:
     build: ./bot

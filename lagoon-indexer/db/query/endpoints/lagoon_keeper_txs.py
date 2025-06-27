@@ -6,6 +6,7 @@ def get_keepers_pending_txs_metadata(chain_id: int = 480) -> Dict[str, Any]:
     Get pending deposit and redeem requests that need to be settled.
     Get settled deposit requests owners for claiming shares on behalf.
     Returns a JSON structure with:
+        initialUpdate: bool
         pendingDeposit: bool
         pendingRedeem: bool
         settledDeposit: list of controllers
@@ -18,6 +19,17 @@ def get_keepers_pending_txs_metadata(chain_id: int = 480) -> Dict[str, Any]:
         WHERE chain_id = %s
     """
     
+    # Check if the mandatory initial updateNewTotalAssets was done
+    initial_update_query = """
+        SELECT 1
+        FROM events e
+        JOIN vaults v ON v.vault_id = e.vault_id
+        WHERE e.event_type = 'total_assets_updated'
+        AND v.chain_id = %s
+        AND e.vault_id = %s
+        LIMIT 1
+    """
+
     # Check if there are pending deposit requests
     deposit_query = """
         SELECT 1
@@ -61,6 +73,7 @@ def get_keepers_pending_txs_metadata(chain_id: int = 480) -> Dict[str, Any]:
         price_oracle_address = row.price_oracle_address
         safe_address = row.safe_address
         
+        initial_update_df = db.frameResponse(initial_update_query, (chain_id, vault_id))
         deposit_df = db.frameResponse(deposit_query, (chain_id, vault_id))
         redeem_df = db.frameResponse(redeem_query, (chain_id, vault_id))
         settled_deposit_df = db.frameResponse(settled_deposit_query, (chain_id, vault_id))
@@ -69,6 +82,7 @@ def get_keepers_pending_txs_metadata(chain_id: int = 480) -> Dict[str, Any]:
             continue
         vault_txs = {
             "vault_id": vault_id,
+            "initialUpdate": initial_update_df.empty,
             "pendingDeposit": not deposit_df.empty,
             "pendingRedeem": not redeem_df.empty,
             "settledDeposit": [],

@@ -27,6 +27,7 @@ def get_keeper_txs(chain_id: int = 480):
         "vaults_txs": [
             {
                 "vault_id": "0x123",
+                "initialUpdate": True,
                 "pendingDeposit": True,
                 "pendingRedeem": True,
                 "settledDeposit": [
@@ -41,6 +42,15 @@ def get_keeper_txs(chain_id: int = 480):
     txs = []
     
     for vault_txs in result["vaults_txs"]:
+        if vault_txs["initialUpdate"] == True:
+            realTotalAssets = 0
+            txs.append({
+                "type": "updateNewTotalAssets",
+                "assets": realTotalAssets,
+                "caller": vault_txs["valuationManager"],
+                "vault_id": vault_txs["vault_id"]
+            })
+            continue
         if vault_txs["pendingDeposit"] == True or vault_txs["pendingRedeem"] == True:
             realTotalAssets = get_new_total_assets(chain_id)
             txs.append({

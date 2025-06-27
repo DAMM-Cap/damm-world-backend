@@ -6,7 +6,8 @@ import { LAGOON_ABI } from "./lagoon_abi.ts";
 export function buildSafeTransactionData(
   method: string,
   args: string[],
-  contractAddress: string
+  contractAddress: string,
+  onChainNonce: number
 ) {
   const iface = new Interface(LAGOON_ABI);
 
@@ -42,5 +43,7 @@ export function buildSafeTransactionData(
     to: contractAddress,
     data,
     value: "0",
+    operation: 0,
+    nonce: onChainNonce,
   };
 }

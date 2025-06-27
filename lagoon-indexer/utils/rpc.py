@@ -12,6 +12,8 @@ def get_rpc_url_fallback(chain_id):
         return os.getenv('BASE_JSON_RPC')
     elif chain_id == 1:
         return os.getenv('MAINNET_JSON_RPC')
+    elif chain_id == 11155111:
+        return os.getenv('SEPOLIA_JSON_RPC')
     else:
         raise Exception('RPC unavailable for that chain_id')
 

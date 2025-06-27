@@ -64,6 +64,35 @@ function parseBatchedCalls(argv: string[]): {
   return result;
 }
 
+async function waitForTransactionConfirmation(
+  provider: ethers.providers.JsonRpcProvider,
+  txHash: string,
+  maxAttempts: number = 30
+): Promise<ethers.providers.TransactionReceipt> {
+  console.log(`Waiting for transaction confirmation: ${txHash}`);
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const receipt = await provider.getTransactionReceipt(txHash);
+      if (receipt) {
+        console.log(`Transaction confirmed in block ${receipt.blockNumber}`);
+        return receipt;
+      }
+    } catch (error) {
+      console.log(
+        `Attempt ${attempt}/${maxAttempts}: Transaction not yet confirmed...`
+      );
+    }
+
+    // Wait 2 seconds before next attempt
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  }
+
+  throw new Error(
+    `Transaction ${txHash} not confirmed after ${maxAttempts} attempts`
+  );
+}
+
 (async () => {
   try {
     const provider = new JsonRpcProvider(process.env.RPC_URL!);
@@ -93,11 +122,14 @@ function parseBatchedCalls(argv: string[]): {
       safeAddress: process.env.SAFE_ADDRESS!,
     });
 
+    const onChainNonce = await safeSdk.getNonce();
+    console.log(`Current Safe nonce: ${onChainNonce}`);
+
     const parsedCalls = parseBatchedCalls(args);
 
     const txs = parsedCalls.map((txs) =>
       txs.map(({ method, contract, args }) =>
-        buildSafeTransactionData(method, args, contract)
+        buildSafeTransactionData(method, args, contract, onChainNonce)
       )
     );
 
@@ -112,6 +144,8 @@ function parseBatchedCalls(argv: string[]): {
       safeTx[i] = await safeSdk.createTransaction({
         safeTransactionData: txs[i],
       });
+
+      console.log("Signing transaction...");
       await safeSdk.signTransaction(safeTx[i]);
 
       console.log("Simulating transaction...");
@@ -130,8 +164,35 @@ function parseBatchedCalls(argv: string[]): {
       console.log("Simulation successful, proceeding with execution...");
 
       if (!justSimulate) {
-        const execTx = await safeSdk.executeTransaction(safeTx[i]);
+        console.log("Executing transaction...");
+        const execTx = await safeSdk.executeTransaction(safeTx[i], {
+          gasLimit: 500000, // Set explicit gas limit
+          maxFeePerGas: ethers.utils.parseUnits("20", "gwei").toString(),
+          maxPriorityFeePerGas: ethers.utils.parseUnits("2", "gwei").toString(),
+        });
         console.log("Batched Safe tx sent:", execTx.hash);
+
+        // Wait for transaction confirmation and check receipt
+        try {
+          const receipt = await waitForTransactionConfirmation(
+            provider,
+            execTx.hash
+          );
+
+          if (receipt.status === 1) {
+            console.log("Transaction executed successfully!");
+            console.log(`Gas used: ${receipt.gasUsed.toString()}`);
+            console.log(`Block number: ${receipt.blockNumber}`);
+          } else {
+            console.error("Transaction reverted!");
+            console.error(`Transaction hash: ${execTx.hash}`);
+            console.error(`Block number: ${receipt.blockNumber}`);
+            throw new Error("Transaction reverted on-chain");
+          }
+        } catch (confirmationError) {
+          console.error("Transaction confirmation failed:", confirmationError);
+          throw confirmationError;
+        }
       } else {
         console.log("Just Simulated!");
       }

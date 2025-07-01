@@ -136,14 +136,12 @@ async function waitForTransactionConfirmation(
       );
 
       console.log("Creating transaction... ");
-      console.log("Batch to Safe:", JSON.stringify(txs, null, 2));
 
       safeTx[i] = await safeSdk.createTransaction({
         safeTransactionData: txs,
       });
 
       console.log("Signing transaction...");
-      console.log("Batch to Safe:", JSON.stringify(safeTx[i], null, 2));
 
       await safeSdk.signTransaction(safeTx[i]);
 

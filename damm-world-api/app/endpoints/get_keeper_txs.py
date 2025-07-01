@@ -81,7 +81,7 @@ def get_keeper_txs(chain_id: int = 480):
                 "caller": vault_txs["safe"],
                 "vault_id": vault_txs["vault_id"]
             })
-    return {"vaults_txs": txs}
+    return {"status": "ok", "vaults_txs": txs}
 
 
 @router.get("/lagoon/keeper_txs/test/{chain_id}")

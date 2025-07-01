@@ -226,7 +226,7 @@ CREATE INDEX IF NOT EXISTS idx_vaults_id ON vaults(vault_id);
 CREATE INDEX IF NOT EXISTS idx_settlements_type_epoch ON settlements(settlement_type, epoch_id);
 
 -- Triggers: update updated_at
-CREATE OR REPLACE FUNCTION update_updated_at_column() RETURNS TRIGGER AS $$
+/* CREATE OR REPLACE FUNCTION update_updated_at_column() RETURNS TRIGGER AS $$
 BEGIN
   NEW.updated_at = CURRENT_TIMESTAMP;
   RETURN NEW;
@@ -240,3 +240,4 @@ CREATE TRIGGER update_deposit_requests_updated_at BEFORE UPDATE ON deposit_reque
 CREATE TRIGGER update_redeem_requests_updated_at BEFORE UPDATE ON redeem_requests FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_user_positions_updated_at BEFORE UPDATE ON user_positions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_indexer_state_updated_at BEFORE UPDATE ON indexer_state FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+ */

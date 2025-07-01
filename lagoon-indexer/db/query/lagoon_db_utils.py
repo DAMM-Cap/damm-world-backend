@@ -52,7 +52,7 @@ class LagoonDbUtils:
             return default_block
 
     @staticmethod
-    def update_last_processed_block(db: Database, vault_id: str, chain_id: int, last_block: int):
+    def update_last_processed_block(db: Database, vault_id: str, chain_id: int, last_block: int, is_syncing: bool):
         """
         Update the last processed block for a given vault_id.
         """
@@ -61,11 +61,12 @@ class LagoonDbUtils:
         SET
             last_processed_block = %s,
             last_processed_timestamp = %s,
-            updated_at = %s
+            updated_at = %s,
+            is_syncing = %s
         WHERE vault_id = %s AND chain_id = %s
         """
         formatted_ts = LagoonDbDateUtils.get_datetime_formatted_now()
-        db.execute(query, (last_block, formatted_ts, formatted_ts, vault_id, chain_id))
+        db.execute(query, (last_block, formatted_ts, formatted_ts, is_syncing, vault_id, chain_id))
 
     @staticmethod
     def get_delta_hours_and_apy_12h_ago(db: Database, vault_id: str, current_share_price: Decimal, current_event_ts: datetime) -> Tuple[Optional[Decimal], Optional[Decimal], Optional[Decimal]]:

@@ -64,12 +64,36 @@ def get_keepers_pending_txs_metadata(chain_id: int = 480) -> Dict[str, Any]:
         ORDER BY u.address
     """
 
+    indexer_state_query = """
+        SELECT is_syncing
+        FROM indexer_state
+        WHERE vault_id = %s
+        AND chain_id = %s
+        LIMIT 1
+    """
+
     vaults_txs = []
-    
+
     vaults_df = db.frameResponse(vaults_query, (chain_id,))
 
     for row in vaults_df.itertuples(index=False):
         vault_id = row.vault_id
+
+        indexer_state_df = db.frameResponse(indexer_state_query, (vault_id, chain_id))
+        if indexer_state_df.empty:
+            return {
+                "status": "error",
+                "message": "Indexer state not found"
+            }
+        is_syncing = indexer_state_df.iloc[0].is_syncing
+        if is_syncing:
+            return {
+                "status": "syncing",
+                "message": "Indexer is currently syncing blockchain data. Bot operations are paused until synchronization completes.",
+                "vault_txs": []
+            }
+        
+        
         price_oracle_address = row.price_oracle_address
         safe_address = row.safe_address
         
@@ -97,6 +121,7 @@ def get_keepers_pending_txs_metadata(chain_id: int = 480) -> Dict[str, Any]:
         
     # Build response structure
     result = {
+        "status": "ok",
         "vaults_txs": vaults_txs
     }
     

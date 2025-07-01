@@ -17,14 +17,30 @@ def run_bot():
     try:
         chain_id = int(os.getenv("CHAIN_ID", "480"))
         pending = fetch_keeper_txs(chain_id)
-
-        if len(pending['vaults_txs']) == 0:
-            print("No pending transactions found")
-            return
-
-        print(f"Found {len(pending['vaults_txs'])} pending transactions to trigger")
         
-        keeper_txs_handler(chain_id, pending) ## Uncomment this to trigger keeper txs
+        # Handle different response statuses
+        if pending.get("status") == "syncing":
+            print(pending.get("message", "Indexer is syncing"))
+            return
+        if pending.get("status") == "error":
+            raise Exception(pending.get("message", "Unknown error"))
+        if pending.get("status") == "ok":
+            # Check if there are any transactions
+            vaults_txs = pending.get("vaults_txs", [])
+            if len(vaults_txs) == 0:
+                print("No pending transactions found")
+                return
+
+            print(f"Found {len(vaults_txs)} pending transactions to trigger")
+            
+            # Create the expected structure for keeper_txs_handler
+            pending_data = {"vaults_txs": vaults_txs}
+            keeper_txs_handler(chain_id, pending_data)
+        else:
+            # Fallback for unexpected response format
+            print(f"Unexpected response format: {pending}")
+            return
+            
     except Exception as e:
         print(f"Bot execution failed: {e}")
         raise

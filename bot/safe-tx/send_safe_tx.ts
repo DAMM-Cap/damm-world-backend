@@ -21,6 +21,12 @@ if (args.length < 3) {
   //process.exit(1);
 }
 
+export const SUPPORTED_METHODS = [
+  "settleDeposit",
+  "updateNewTotalAssets",
+  "claimSharesOnBehalf",
+];
+
 function parseBatchedCalls(argv: string[]): {
   method: string;
   contract: string;
@@ -39,14 +45,7 @@ function parseBatchedCalls(argv: string[]): {
     i += 2;
 
     const currentArgs: string[] = [];
-    while (
-      i < argv.length &&
-      ![
-        "settleDeposit",
-        "updateNewTotalAssets",
-        "claimSharesOnBehalf",
-      ].includes(argv[i])
-    ) {
+    while (i < argv.length && !SUPPORTED_METHODS.includes(argv[i])) {
       currentArgs.push(argv[i]);
       i++;
     }
@@ -122,30 +121,30 @@ async function waitForTransactionConfirmation(
       safeAddress: process.env.SAFE_ADDRESS!,
     });
 
-    const onChainNonce = await safeSdk.getNonce();
-    console.log(`Current Safe nonce: ${onChainNonce}`);
-
     const parsedCalls = parseBatchedCalls(args);
-
-    const txs = parsedCalls.map((txs) =>
-      txs.map(({ method, contract, args }) =>
-        buildSafeTransactionData(method, args, contract, onChainNonce)
-      )
-    );
-
+    let onChainNonce = await safeSdk.getNonce();
     const justSimulate = process.env.JUST_SIMULATE === "true";
 
     let safeTx: SafeTransaction[] = [];
-    for (let i = 0; i < txs.length; i++) {
-      if (txs[i].length === 0) {
+    for (let i = 0; i < parsedCalls.length; i++) {
+      if (parsedCalls[i].length === 0) {
         continue;
       }
+
+      const txs = parsedCalls[i].map(({ method, contract, args }) =>
+        buildSafeTransactionData(method, args, contract, onChainNonce)
+      );
+
       console.log("Creating transaction... ");
+      console.log("Batch to Safe:", JSON.stringify(txs, null, 2));
+
       safeTx[i] = await safeSdk.createTransaction({
-        safeTransactionData: txs[i],
+        safeTransactionData: txs,
       });
 
       console.log("Signing transaction...");
+      console.log("Batch to Safe:", JSON.stringify(safeTx[i], null, 2));
+
       await safeSdk.signTransaction(safeTx[i]);
 
       console.log("Simulating transaction...");
@@ -196,6 +195,8 @@ async function waitForTransactionConfirmation(
       } else {
         console.log("Just Simulated!");
       }
+      // Increment nonce for the next batch to ensure uniqueness
+      onChainNonce += 1;
     }
   } catch (e) {
     console.error("Error in send_safe_tx.ts:");

@@ -19,8 +19,12 @@ def get_new_total_assets(chain_id: int = 480):
 
 def get_keeper_txs(chain_id: int = 480):
     result = get_keepers_pending_txs_metadata(chain_id)
+    if result["status"] == "syncing":
+        return result
+    if result["status"] == "error":
+        return result
     if len(result["vaults_txs"]) == 0:
-        return {"vaults_txs": []}
+        return result
     
     """ Result JSON format example:
     result = {

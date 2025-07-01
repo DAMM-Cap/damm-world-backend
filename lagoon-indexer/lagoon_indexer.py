@@ -18,6 +18,7 @@ from db.utils.lagoon_db_date_utils import LagoonDbDateUtils
 from eth_utils import event_abi_to_log_topic
 from utils.rpc import get_w3
 from decimal import Decimal
+from utils.indexer_status import is_up_to_date, get_block_gap
 
 # Event Formatter
 class EventFormatter:
@@ -493,17 +494,19 @@ class LagoonIndexer:
             latest_block = self.get_latest_block_number()
             print(f"Current chain head: {latest_block}")
 
-            block_gap = latest_block - last_processed_block
-            if block_gap < 1:
+            if is_up_to_date(last_processed_block, latest_block):
                 print("Lagoon is up to date.")
                 return 1
+            
+            block_gap = get_block_gap(last_processed_block, latest_block)
 
             range_to_process = min(self.range, block_gap)
             from_block = last_processed_block + 1
             print(f"Processing block range {from_block} to {from_block + range_to_process}")
 
             self.fetch_and_store(from_block, range_to_process)
-            LagoonDbUtils.update_last_processed_block(self.db, self.vault_id, self.chain_id, from_block + range_to_process)
+            is_syncing = not is_up_to_date(last_processed_block, latest_block)
+            LagoonDbUtils.update_last_processed_block(self.db, self.vault_id, self.chain_id, from_block + range_to_process, is_syncing)
             print(f"Updated last processed block to {from_block + range_to_process} in DB.")
 
             if self.real_time and self.sleep_time > 0:

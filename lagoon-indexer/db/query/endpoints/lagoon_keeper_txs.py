@@ -14,9 +14,10 @@ def get_keepers_pending_txs_metadata(chain_id: int = 480) -> Dict[str, Any]:
     db = getEnvDb('damm-public')
     
     vaults_query = """
-        SELECT vault_id, price_oracle_address, safe_address
-        FROM vaults
-        WHERE chain_id = %s
+        SELECT v.vault_id, v.price_oracle_address, v.safe_address, t.address as underlying_token_address
+        FROM vaults v
+        JOIN tokens t ON t.token_id = v.deposit_token_id
+        WHERE v.chain_id = %s
     """
     
     # Check if the mandatory initial updateNewTotalAssets was done
@@ -96,6 +97,7 @@ def get_keepers_pending_txs_metadata(chain_id: int = 480) -> Dict[str, Any]:
         
         price_oracle_address = row.price_oracle_address
         safe_address = row.safe_address
+        underlying_token_address = row.underlying_token_address
         
         initial_update_df = db.frameResponse(initial_update_query, (chain_id, vault_id))
         deposit_df = db.frameResponse(deposit_query, (chain_id, vault_id))
@@ -111,7 +113,8 @@ def get_keepers_pending_txs_metadata(chain_id: int = 480) -> Dict[str, Any]:
             "pendingRedeem": not redeem_df.empty,
             "settledDeposit": [],
             "valuationManager": price_oracle_address,
-            "safe": safe_address
+            "safe": safe_address,
+            "underlying_token_address": underlying_token_address
         }
         # Add settled deposit owner addresses
         if not settled_deposit_df.empty:

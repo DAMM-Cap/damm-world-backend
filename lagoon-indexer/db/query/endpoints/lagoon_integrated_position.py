@@ -46,6 +46,16 @@ def get_integrated_position_data_query(offset: int = 0, limit: int = 20) -> str:
         WHERE user_id = %s
         AND vault_id IN (SELECT vault_id FROM user_vaults)
         GROUP BY vault_id
+    ),
+
+    settled_redeems AS (
+        SELECT vault_id,
+            SUM(shares) AS total_settled_redeem
+        FROM redeem_requests
+        WHERE user_id = %s
+        AND status = 'settled'
+        AND vault_id IN (SELECT vault_id FROM user_vaults)
+        GROUP BY vault_id
     )
 
     SELECT
@@ -61,10 +71,12 @@ def get_integrated_position_data_query(offset: int = 0, limit: int = 20) -> str:
         COALESCE(ur.user_total_shares, 0) AS user_total_shares,
         COALESCE(ls.total_shares, 0) AS total_shares,
         COALESCE(ur.total_deposit, 0) AS completed_deposits,
+        COALESCE(sr.total_settled_redeem, 0) AS settled_redeems,
         COALESCE(ur.total_withdraw, 0) AS completed_redeems
     FROM latest_snapshots ls
     LEFT JOIN snapshots_12h_ago s12 ON s12.vault_id = ls.vault_id
     LEFT JOIN user_returns ur ON ur.vault_id = ls.vault_id
+    LEFT JOIN settled_redeems sr ON sr.vault_id = ls.vault_id
     OFFSET {offset}
     LIMIT {limit};
     """
@@ -255,7 +267,7 @@ def get_integrated_position(address: str, offset: int, limit: int, chain_id: int
         count_query=PaginationUtils.get_integrated_position_count_query,
         data_query=get_integrated_position_data_query,
         count_query_params=(user_id, chain_id),
-        data_query_params=(user_id, chain_id, chain_id, chain_id, user_id),
+        data_query_params=(user_id, chain_id, chain_id, chain_id, user_id, user_id),
         offset=offset,
         limit=limit,
         result_key="positions"

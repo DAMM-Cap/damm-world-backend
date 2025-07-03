@@ -1,4 +1,3 @@
-from dotenv import load_dotenv
 import os
 import sys
 import time
@@ -6,7 +5,6 @@ import traceback
 import pandas as pd
 from typing import List, Dict, Tuple
 from datetime import datetime
-from web3.contract import Contract
 import uuid
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from db.db import Database, getEnvDb
@@ -16,9 +14,8 @@ from db.query.lagoon_db_utils import LagoonDbUtils
 from db.query.lagoon_events import LagoonEvents
 from db.utils.lagoon_db_date_utils import LagoonDbDateUtils
 from eth_utils import event_abi_to_log_topic
-from utils.rpc import get_w3
 from decimal import Decimal
-from utils.indexer_status import is_up_to_date, get_block_gap
+from utils.indexer_status import is_up_to_date, get_indexer_status
 
 # Event Formatter
 class EventFormatter:
@@ -511,9 +508,12 @@ class LagoonIndexer:
                 print("Lagoon is up to date.")
                 return 1
             
-            block_gap = get_block_gap(last_processed_block, latest_block)
+            # Get indexer status
+            block_gap, percentage_behind = get_indexer_status(last_processed_block, latest_block, self.chain_id)
+            print(f"Indexer is {percentage_behind}% behind the chain head")
             print(f"Block gap: {block_gap}")
 
+            # Get block range to process
             range_to_process = min(self.range, block_gap)
             from_block = last_processed_block + 1
             print(f"Processing block range {from_block} to {from_block + range_to_process}")

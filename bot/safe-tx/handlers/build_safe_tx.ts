@@ -35,6 +35,14 @@ export function buildSafeTransactionData(
       data = iface.encodeFunctionData("claimSharesOnBehalf", [args]);
       break;
 
+    case "approve":
+      if (args.length !== 2) throw new Error("approve requires 2 args");
+      data = iface.encodeFunctionData("approve", [
+        args[0],
+        BigNumber.from(args[1]),
+      ]);
+      break;
+
     default:
       throw new Error(`Unsupported method: ${method}`);
   }

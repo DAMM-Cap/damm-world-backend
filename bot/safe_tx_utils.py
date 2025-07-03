@@ -51,6 +51,12 @@ def keeper_txs_handler(chain_id, pending):
                 ],
                 "caller": safeAddress,
                 "vault_id": vault_id
+            },
+            {
+                "type": "approve",
+                "contract": token_contract,
+                "caller": safeAddress,
+                "vault_id": vault_id
             }
         ]
     }
@@ -73,6 +79,11 @@ def keeper_txs_handler(chain_id, pending):
             elif method == "claimSharesOnBehalf":
                 controllers = req["controllers"]
                 batched_args.extend([method, contract, *controllers])
+
+            elif method == "approve":
+                token_contract = req["contract"]
+                assets = str(req["assets"])
+                batched_args.extend([method, token_contract, *[contract, assets]])
 
             else:
                 raise ValueError(f"Unknown request type: {method}")

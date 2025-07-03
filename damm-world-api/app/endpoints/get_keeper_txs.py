@@ -10,11 +10,12 @@ router = APIRouter()
 
 def get_new_total_assets(chain_id: int = 480):
     vault_address = get_lagoon_deployments(chain_id)["lagoon_address"]
+    safe_address = get_lagoon_deployments(chain_id)["safe_address"]
     w3 = get_w3(chain_id)
     vault_contract = w3.eth.contract(address=vault_address, abi=LAGOON_ABI)
     deposit_token_address = vault_contract.functions.asset().call()
     deposit_token_contract = w3.eth.contract(address=deposit_token_address, abi=ERC20_ABI)
-    realTotalAssets = deposit_token_contract.functions.balanceOf(vault_address).call()
+    realTotalAssets = deposit_token_contract.functions.balanceOf(safe_address).call()
     return realTotalAssets
 
 def get_keeper_txs(chain_id: int = 480):
@@ -63,10 +64,17 @@ def get_keeper_txs(chain_id: int = 480):
                 "caller": vault_txs["valuationManager"],
                 "vault_id": vault_txs["vault_id"]
             })
-
-            # TODO: Check if the Safe must approve the Vault to transfer the required 
-            # amount of assets for redeem settlement.
-
+            if vault_txs["pendingRedeem"] == True:
+                # The underlying_token address must approve the Vault to handle the required 
+                # amount of assets for redeem settlement.
+                # That is: asset.approve(vaultAddress, realTotalAssets);
+                txs.append({
+                    "type": "approve",
+                    "contract": vault_txs["underlying_token_address"],
+                    "assets": realTotalAssets,
+                    "caller": vault_txs["safe"],
+                    "vault_id": vault_txs["vault_id"]
+                })
             # Lagoon's deposit settlement includes settle redeem.
             txs.append({
                 "type": "settleDeposit",

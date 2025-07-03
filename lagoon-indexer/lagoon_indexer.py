@@ -510,7 +510,7 @@ class LagoonIndexer:
             
             # Get indexer status
             block_gap, percentage_behind = get_indexer_status(last_processed_block, latest_block, self.chain_id)
-            print(f"Indexer is {percentage_behind}% behind the chain head")
+            print(f"Indexer is {percentage_behind}% towards completion of syncing.")
             print(f"Block gap: {block_gap}")
 
             # Get block range to process
@@ -523,6 +523,12 @@ class LagoonIndexer:
             is_syncing = not is_up_to_date(new_last_processed_block, latest_block)
             LagoonDbUtils.update_last_processed_block(self.db, self.vault_id, self.chain_id, new_last_processed_block, is_syncing)
             print(f"Updated last processed block to {new_last_processed_block} in DB.")
+
+            bot_last_processed_block = LagoonDbUtils.get_bot_last_processed_block(self.db, self.vault_id, self.chain_id, self.first_lagoon_block)
+            print(f"Bot last processed block: {bot_last_processed_block}")
+            if (bot_last_processed_block <= new_last_processed_block):
+                LagoonDbUtils.update_bot_in_sync(self.db, self.vault_id, self.chain_id)
+                print(f"Updated bot status to in sync in DB.")
 
             if self.real_time and self.sleep_time > 0:
                 print(f"Sleeping {self.sleep_time} seconds.")

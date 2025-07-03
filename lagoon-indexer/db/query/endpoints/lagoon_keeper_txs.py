@@ -73,6 +73,14 @@ def get_keepers_pending_txs_metadata(chain_id: int = 480) -> Dict[str, Any]:
         LIMIT 1
     """
 
+    bot_status_query = """
+        SELECT in_sync
+        FROM bot_status
+        WHERE vault_id = %s
+        AND chain_id = %s
+        LIMIT 1
+    """
+
     vaults_txs = []
 
     vaults_df = db.frameResponse(vaults_query, (chain_id,))
@@ -86,14 +94,26 @@ def get_keepers_pending_txs_metadata(chain_id: int = 480) -> Dict[str, Any]:
                 "status": "error",
                 "message": "Indexer state not found"
             }
-        is_syncing = indexer_state_df.iloc[0].is_syncing
-        if is_syncing:
+        bot_status_df = db.frameResponse(bot_status_query, (vault_id, chain_id))
+        if bot_status_df.empty:
+            return {
+                "status": "error",
+                "message": "Bot status not found"
+            }
+        indexer_is_syncing = indexer_state_df.iloc[0].is_syncing
+        if indexer_is_syncing:
             return {
                 "status": "syncing",
                 "message": "Indexer is currently syncing blockchain data. Bot operations are paused until synchronization completes.",
                 "vault_txs": []
             }
-        
+        bot_in_sync = bot_status_df.iloc[0].in_sync
+        if not bot_in_sync:
+            return {
+                "status": "syncing",
+                "message": "Bot is not in sync with the indexer. Bot operations are paused until synchronization completes.",
+                "vault_txs": []
+            }
         
         price_oracle_address = row.price_oracle_address
         safe_address = row.safe_address

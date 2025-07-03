@@ -1,6 +1,8 @@
 from core.lagoon_deployments import get_lagoon_deployments
 
-headroom = 4
+import os
+
+headroom = int(os.getenv("INDEXER_HEADROOM", "4"))
 
 def is_up_to_date(last_processed_block: int, current_block: int):
     return last_processed_block + headroom >= current_block

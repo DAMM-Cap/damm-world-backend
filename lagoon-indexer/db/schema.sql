@@ -207,6 +207,17 @@ CREATE TABLE IF NOT EXISTS indexer_state (
   PRIMARY KEY (vault_id, chain_id)
 );
 
+-- Bot Status
+CREATE TABLE IF NOT EXISTS bot_status (
+  vault_id UUID NOT NULL REFERENCES vaults(vault_id) ON DELETE CASCADE,
+  chain_id INTEGER NOT NULL REFERENCES chains(chain_id),
+  last_processed_block BIGINT,
+  last_processed_timestamp TIMESTAMP,
+  in_sync BOOLEAN,
+  updated_at TIMESTAMP,
+  PRIMARY KEY (vault_id, chain_id)
+);
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_vaults_chain_status ON vaults(chain_id, status);
 CREATE INDEX IF NOT EXISTS idx_events_vault_type_time ON events(vault_id, event_type, event_timestamp DESC);
@@ -219,6 +230,9 @@ CREATE INDEX IF NOT EXISTS idx_user_positions_user ON user_positions(user_id);
 CREATE INDEX IF NOT EXISTS idx_indexer_vault_chain ON indexer_state(vault_id, chain_id);
 CREATE INDEX IF NOT EXISTS idx_indexer_is_syncing ON indexer_state(is_syncing);
 CREATE INDEX IF NOT EXISTS idx_indexer_last_processed_time ON indexer_state(last_processed_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_bot_status_vault_chain ON bot_status(vault_id, chain_id);
+CREATE INDEX IF NOT EXISTS idx_bot_status_in_sync ON bot_status(in_sync);
+CREATE INDEX IF NOT EXISTS idx_bot_status_last_processed_time ON bot_status(last_processed_timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_events_txhash ON events(transaction_hash);
 CREATE INDEX IF NOT EXISTS idx_user_positions_vault_user ON user_positions(vault_id, user_id);
 CREATE INDEX IF NOT EXISTS idx_vault_snapshots_vault_id ON vault_snapshots(vault_id);
@@ -240,4 +254,5 @@ CREATE TRIGGER update_deposit_requests_updated_at BEFORE UPDATE ON deposit_reque
 CREATE TRIGGER update_redeem_requests_updated_at BEFORE UPDATE ON redeem_requests FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_user_positions_updated_at BEFORE UPDATE ON user_positions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_indexer_state_updated_at BEFORE UPDATE ON indexer_state FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_bot_status_updated_at BEFORE UPDATE ON bot_status FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
  */

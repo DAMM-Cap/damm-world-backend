@@ -52,6 +52,24 @@ class LagoonDbUtils:
             return default_block
 
     @staticmethod
+    def get_bot_last_processed_block(db: Database, vault_id: str, chain_id: int, default_block: int) -> int:
+        """
+        Retrieve the last processed block recorded by the bot for a given vault_id.
+        If no record exists in bot_status, return the default_block.
+        """
+        query = """
+        SELECT COALESCE(last_processed_block, %s) AS last_block
+        FROM bot_status
+        WHERE vault_id = %s AND chain_id = %s
+        """
+        result = db.queryResponse(query, (default_block, vault_id, chain_id))
+
+        if result and 'last_block' in result[0]:
+            return int(result[0]['last_block'])
+        else:
+            return default_block
+
+    @staticmethod
     def update_last_processed_block(db: Database, vault_id: str, chain_id: int, last_block: int, is_syncing: bool):
         """
         Update the last processed block for a given vault_id.
@@ -67,6 +85,38 @@ class LagoonDbUtils:
         """
         formatted_ts = LagoonDbDateUtils.get_datetime_formatted_now()
         db.execute(query, (last_block, formatted_ts, formatted_ts, is_syncing, vault_id, chain_id))
+
+    @staticmethod
+    def update_bot_status(db: Database, vault_id: str, chain_id: int, last_processed_block: int, last_processed_timestamp: str):
+        """
+        Update the bot status for a given vault_id.
+        """
+        query = """
+            UPDATE bot_status
+            SET
+                last_processed_block = %s,
+                last_processed_timestamp = %s,
+                in_sync = %s,
+                updated_at = %s
+            WHERE vault_id = %s AND chain_id = %s
+        """
+        now_ts = LagoonDbDateUtils.get_datetime_formatted_now()
+        db.execute(query, (last_processed_block, last_processed_timestamp, False, now_ts, vault_id, chain_id))
+    
+    @staticmethod
+    def update_bot_in_sync(db: Database, vault_id: str, chain_id: int):
+        """
+        Update the bot status to in sync when the indexer catches up.
+        """
+        query = """
+            UPDATE bot_status
+            SET
+                in_sync = %s,
+                updated_at = %s
+            WHERE vault_id = %s AND chain_id = %s
+        """
+        now_ts = LagoonDbDateUtils.get_datetime_formatted_now()
+        db.execute(query, (True, now_ts, vault_id, chain_id))
 
     @staticmethod
     def get_delta_hours_and_apy_12h_ago(db: Database, vault_id: str, current_share_price: Decimal, current_event_ts: datetime) -> Tuple[Optional[Decimal], Optional[Decimal], Optional[Decimal]]:

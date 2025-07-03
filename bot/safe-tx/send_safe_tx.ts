@@ -5,6 +5,7 @@ import { ethers } from "ethers";
 import { buildSafeTransactionData } from "./handlers/build_safe_tx";
 import { executeSafeTransactionWithRetry } from "./handlers/execute_safe_tx";
 import { simulateSafeTransaction } from "./handlers/simulate_safe_tx";
+import { updateKeeperStatus } from "./handlers/update_keeper_status";
 
 dotenv.config();
 
@@ -140,6 +141,13 @@ async function main() {
         provider,
         onChainNonce,
         "20"
+      );
+
+      // Update keeper status
+      await updateKeeperStatus(
+        network.chainId.toString(),
+        process.env.VAULT_ADDRESS!,
+        provider
       );
     } else {
       console.log("Just simulated; skipping execution.");

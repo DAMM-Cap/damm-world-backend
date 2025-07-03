@@ -30,6 +30,7 @@ def truncate_event_tables():
         "vaults",
         "tokens",
         "indexer_state",
+        "bot_status",
         "users",
         "chains"
     ]

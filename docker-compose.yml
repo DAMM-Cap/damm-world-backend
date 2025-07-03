@@ -49,8 +49,27 @@ services:
         condition: service_healthy
     #command: ["python", "indexer.py", "480", "10", "2000", "1", "60"] ## Run on Worldchain
     #command: ["python", "indexer.py", "31337", "10", "2000", "1", "60"] ## Run on Anvil local fork
-    command: ["python", "indexer.py", "8453", "10", "2000", "1", "60"] ## Run on Base
+    #command: ["python", "indexer.py", "8453", "10", "2000", "1", "60"] ## Run on Base
     #command: ["python", "indexer.py", "1", "10", "2000", "1", "60"] ## Run on Mainnet
+    command: ["python", "indexer.py", "11155111", "10", "2000", "1", "60"] ## Run on Sepolia
+
+  lagoon-bot:
+    build: ./bot
+    container_name: damm_bot
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - ./bot:/app
+      - ./damm-world-api/app/constants:/app/constants
+      - ./lagoon-indexer/db:/app/db
+      - ./lagoon-indexer/core:/app/core
+      - ./lagoon-indexer/utils:/app/utils
+    depends_on:
+      db:
+        condition: service_healthy
+      indexer-base:
+        condition: service_started
 
 volumes:
   postgres_data:

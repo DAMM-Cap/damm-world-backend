@@ -16,6 +16,9 @@ def get_data_query(table: str, owner_join_column: bool = False, offset: int = 0,
                 t3.symbol as deposit_token_symbol,
                 t2.address as vault_token_address,
                 t3.address as deposit_token_address,
+                e.transaction_hash as tx_hash,
+                e.block_number as block,
+                e.event_timestamp as timestamp,
                 '{table}' AS source_table
             FROM {table} t
             JOIN vaults v ON t.vault_id = v.vault_id
@@ -39,6 +42,9 @@ def get_data_query(table: str, owner_join_column: bool = False, offset: int = 0,
                 t3.symbol as deposit_token_symbol,
                 t2.address as vault_token_address,
                 t3.address as deposit_token_address,
+                e.transaction_hash as tx_hash,
+                e.block_number as block,
+                e.event_timestamp as timestamp,
                 '{table}' AS source_table
             FROM {table} t
             JOIN vaults v ON t.vault_id = v.vault_id
@@ -68,25 +74,29 @@ def get_user_txs(address: str, offset: int, limit: int, chain_id: int = 480) -> 
             "owner_join_column": True,
             "count_query": PaginationUtils.get_count_query,
             "data_query": get_data_query,
-            "query_params": (lowercase_address, chain_id)
+            "count_query_params": (lowercase_address, chain_id),
+            "data_query_params": (lowercase_address, chain_id)
         },
         "redeem_requests": {
             "owner_join_column": True,
             "count_query": PaginationUtils.get_count_query,
             "data_query": get_data_query,
-            "query_params": (lowercase_address, chain_id)
+            "count_query_params": (lowercase_address, chain_id),
+            "data_query_params": (lowercase_address, chain_id)
         },
         "vault_returns": {
             "owner_join_column": True,
             "count_query": PaginationUtils.get_count_query,
             "data_query": get_data_query,
-            "query_params": (lowercase_address, chain_id)
+            "count_query_params": (lowercase_address, chain_id),
+            "data_query_params": (lowercase_address, chain_id)
         },
         "transfers": {
             "owner_join_column": False,
             "count_query": PaginationUtils.get_count_query,
             "data_query": get_data_query,
-            "query_params": (lowercase_address, lowercase_address, contract_addresses, contract_addresses, chain_id)
+            "count_query_params": (lowercase_address, lowercase_address, contract_addresses, contract_addresses, chain_id),
+            "data_query_params": (lowercase_address, lowercase_address, contract_addresses, contract_addresses, chain_id)
         }
     }
 
@@ -94,7 +104,8 @@ def get_user_txs(address: str, offset: int, limit: int, chain_id: int = 480) -> 
     result = PaginationUtils.get_paginated_results(
         db=db,
         tables_config=tables_config,
-        query_params={},  # Not used in this case, params are in table config
+        count_query_params={},  # Not used in this case, params are in table config
+        data_query_params={},  # Not used in this case, params are in table config
         offset=offset,
         limit=limit
     )

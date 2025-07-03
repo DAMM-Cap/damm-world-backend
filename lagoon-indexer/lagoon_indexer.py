@@ -1,4 +1,3 @@
-from dotenv import load_dotenv
 import os
 import sys
 import time
@@ -6,7 +5,6 @@ import traceback
 import pandas as pd
 from typing import List, Dict, Tuple
 from datetime import datetime
-from web3.contract import Contract
 import uuid
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from db.db import Database, getEnvDb
@@ -16,8 +14,8 @@ from db.query.lagoon_db_utils import LagoonDbUtils
 from db.query.lagoon_events import LagoonEvents
 from db.utils.lagoon_db_date_utils import LagoonDbDateUtils
 from eth_utils import event_abi_to_log_topic
-from utils.rpc import get_w3
 from decimal import Decimal
+from utils.indexer_status import is_up_to_date, get_indexer_status
 
 # Event Formatter
 class EventFormatter:
@@ -437,46 +435,59 @@ class LagoonIndexer:
         Fetches and stores events for all configured event types.
         """
         to_block = from_block + range
+        all_events = []
+
+        # 1) Collect events of all types
         for event_name in self.event_names:
             try:
                 print(f"Fetching {event_name} events from block {from_block} to {to_block}")
                 events = self.fetch_events(event_name, from_block, to_block)
                 if not events:
-                    print(f"No {event_name} events found in block range {from_block}-{to_block}")
                     continue
 
-                # Create fresh dict copies with blockTimestamp added
-                new_events = []
                 for event in events:
                     event_copy = dict(event)
+                    event_copy['event_name'] = event_name  # track type
                     event_copy['blockTimestamp'] = self.get_block_ts(event)
-                    new_events.append(event_copy)
-                events = new_events  # Replace the list with the new one
+                    all_events.append(event_copy)
 
-                if event_name == 'DepositRequest':
-                    self.event_processor.store_DepositRequest_events(events)
-                elif event_name == 'RedeemRequest':
-                    self.event_processor.store_RedeemRequest_events(events)
-                if event_name == 'SettleDeposit':
-                    self.event_processor.store_Settlement_events(events, 'deposit')
-                elif event_name == 'SettleRedeem':
-                    self.event_processor.store_Settlement_events(events, 'redeem')
-                elif event_name == 'DepositRequestCanceled':
-                    self.event_processor.store_DepositRequestCanceled_events(events)
-                elif event_name == 'Transfer':
-                    self.event_processor.store_Transfer_events(events)
-                elif event_name == 'NewTotalAssetsUpdated':
-                    self.event_processor.store_NewTotalAssetsUpdated_events(events)
-                elif event_name == 'RatesUpdated':
-                    self.event_processor.store_RatesUpdated_events(events)
-                elif event_name == 'Withdraw':
-                    self.event_processor.store_Withdraw_events(events)
-                elif event_name == 'Deposit':
-                    self.event_processor.store_Deposit_events(events)
-                elif event_name == 'Referral':
-                    self.event_processor.store_Referral_events(events)
             except Exception as e:
-                print(f"Error fetching/storing {event_name} events: {e}")
+                print(f"Error fetching {event_name} events: {e}")
+                traceback.print_exc()
+                time.sleep(5)
+                self.blockchain = getEnvNode(self.chain_id)
+
+        # 2) Sort all events by blockNumber and logIndex
+        all_events.sort(key=lambda e: (int(e['blockNumber']), int(e['logIndex'])))
+
+        # 3) Process each event in order
+        for event in all_events:
+            try:
+                event_name = event['event_name']
+                if event_name == 'DepositRequest':
+                    self.event_processor.store_DepositRequest_events([event])
+                elif event_name == 'RedeemRequest':
+                    self.event_processor.store_RedeemRequest_events([event])
+                elif event_name == 'SettleDeposit':
+                    self.event_processor.store_Settlement_events([event], 'deposit')
+                elif event_name == 'SettleRedeem':
+                    self.event_processor.store_Settlement_events([event], 'redeem')
+                elif event_name == 'DepositRequestCanceled':
+                    self.event_processor.store_DepositRequestCanceled_events([event])
+                elif event_name == 'Transfer':
+                    self.event_processor.store_Transfer_events([event])
+                elif event_name == 'NewTotalAssetsUpdated':
+                    self.event_processor.store_NewTotalAssetsUpdated_events([event])
+                elif event_name == 'RatesUpdated':
+                    self.event_processor.store_RatesUpdated_events([event])
+                elif event_name == 'Withdraw':
+                    self.event_processor.store_Withdraw_events([event])
+                elif event_name == 'Deposit':
+                    self.event_processor.store_Deposit_events([event])
+                elif event_name == 'Referral':
+                    self.event_processor.store_Referral_events([event])
+            except Exception as e:
+                print(f"Error processing {event['event_name']} event: {e}")
                 traceback.print_exc()
                 time.sleep(5)
                 self.blockchain = getEnvNode(self.chain_id)
@@ -493,18 +504,31 @@ class LagoonIndexer:
             latest_block = self.get_latest_block_number()
             print(f"Current chain head: {latest_block}")
 
-            block_gap = latest_block - last_processed_block
-            if block_gap < 1:
+            if is_up_to_date(last_processed_block, latest_block):
                 print("Lagoon is up to date.")
                 return 1
+            
+            # Get indexer status
+            block_gap, percentage_behind = get_indexer_status(last_processed_block, latest_block, self.chain_id)
+            print(f"Indexer is {percentage_behind}% towards completion of syncing.")
+            print(f"Block gap: {block_gap}")
 
+            # Get block range to process
             range_to_process = min(self.range, block_gap)
             from_block = last_processed_block + 1
             print(f"Processing block range {from_block} to {from_block + range_to_process}")
 
             self.fetch_and_store(from_block, range_to_process)
-            LagoonDbUtils.update_last_processed_block(self.db, self.vault_id, self.chain_id, from_block + range_to_process)
-            print(f"Updated last processed block to {from_block + range_to_process} in DB.")
+            new_last_processed_block = from_block + range_to_process
+            is_syncing = not is_up_to_date(new_last_processed_block, latest_block)
+            LagoonDbUtils.update_last_processed_block(self.db, self.vault_id, self.chain_id, new_last_processed_block, is_syncing)
+            print(f"Updated last processed block to {new_last_processed_block} in DB.")
+
+            bot_last_processed_block = LagoonDbUtils.get_bot_last_processed_block(self.db, self.vault_id, self.chain_id, self.first_lagoon_block)
+            print(f"Bot last processed block: {bot_last_processed_block}")
+            if (bot_last_processed_block <= new_last_processed_block):
+                LagoonDbUtils.update_bot_in_sync(self.db, self.vault_id, self.chain_id)
+                print(f"Updated bot status to in sync in DB.")
 
             if self.real_time and self.sleep_time > 0:
                 print(f"Sleeping {self.sleep_time} seconds.")

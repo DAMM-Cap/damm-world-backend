@@ -16,7 +16,6 @@ docker-compose build --no-cache
 
 # Start containers
 echo "Starting containers..."
-#docker-compose up -d
 docker-compose up -d db
 
 
@@ -28,14 +27,11 @@ while [[ $(docker inspect --format='{{.State.Health.Status}}' damm_postgres) != 
 done
 echo "Postgres is healthy!"
 
-# Create tables and insert fixed vault in same container session
-echo "Creating tables and inserting fixed vault in the same container session..."
-#docker-compose exec indexer bash -c "python create_table.py && python insert_fixed_vault.py"
-#docker-compose exec indexer-base bash -c "python db/run_schema.py"
+# Create tables
+echo "Creating tables..."
 docker-compose run --rm indexer-base python db/run_schema.py
 
 
-# Launch indexer
-echo "Starting Lagoon indexer..."
-#docker-compose up
-docker-compose up damm-api indexer-base
+# Launch services
+echo "Starting Lagoon services: indexer, api, bot..."
+docker-compose up damm-api indexer-base lagoon-bot

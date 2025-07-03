@@ -190,14 +190,32 @@ def insert_indexer_state(db, vault_id, chain_id):
     """
     with db.connection as conn:
         with conn.cursor() as cur:
-            cur.execute(query, (vault_id, chain_id, None, now_ts, "1.0.0", False, now_ts, now_ts))
+            cur.execute(query, (vault_id, chain_id, None, now_ts, "1.0.0", True, now_ts, now_ts))
         conn.commit()
     print(f"Indexer state inserted (or already exists).")
+
+def insert_bot_status(db, vault_id, chain_id):
+    now_ts = LagoonDbDateUtils.get_datetime_formatted_now()
+    query = """
+    INSERT INTO bot_status (
+    vault_id, chain_id, last_processed_block, last_processed_timestamp, 
+    in_sync, updated_at
+    ) VALUES (
+        %s, %s, %s, %s, %s, %s
+    )
+    ON CONFLICT (vault_id, chain_id) DO NOTHING;
+    """
+    with db.connection as conn:
+        with conn.cursor() as cur:
+            cur.execute(query, (vault_id, chain_id, None, now_ts, False, now_ts))
+        conn.commit()
+    print(f"Bot status inserted (or already exists).")
 
 def register_indexer(chain_id):
     db = getEnvDb('damm-public')
     insert_chain(db, chain_id)
     vault_id = insert_vault(db, chain_id)
     insert_indexer_state(db, vault_id, chain_id)
+    insert_bot_status(db, vault_id, chain_id)
     db.closeConnection()
     return vault_id

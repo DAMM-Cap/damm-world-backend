@@ -4,13 +4,14 @@ import sys
 import argparse
 import time
 import traceback
+import asyncio
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from lagoon_indexer import LagoonIndexer
 from constants.abi.lagoon import LAGOON_ABI
 from db.register_indexer import register_indexer
 
-def main():
+async def main():
     load_dotenv()
 
     parser = argparse.ArgumentParser(description='Lagoon Indexer')
@@ -55,7 +56,7 @@ def main():
 
     while time.time() - start_time < args.run_time:
         try:
-            if indexer.fetcher_loop() == 1:
+            if await indexer.fetcher_loop() == 1:
                 break
         except Exception as e:
             print(f"Error in indexer loop: {e}")
@@ -66,4 +67,5 @@ def main():
     print(f"Indexer stopped after {time.time() - start_time:.2f} seconds.")
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
+    #main()

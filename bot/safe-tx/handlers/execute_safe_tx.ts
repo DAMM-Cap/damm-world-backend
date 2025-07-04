@@ -41,6 +41,18 @@ export async function executeSafeTransactionWithRetry(
   maxFeePerGas: string
 ) {
   try {
+    const safeBalance = await provider.getBalance(await safeSdk.getAddress());
+    console.log(`Safe balance: ${ethers.utils.formatEther(safeBalance)} ETH`);
+
+    const minBalanceEth = 0.001;
+    if (parseFloat(ethers.utils.formatEther(safeBalance)) < minBalanceEth) {
+      throw new Error(
+        `Safe balance too low: ${ethers.utils.formatEther(
+          safeBalance
+        )} ETH. Needs at least ${minBalanceEth} ETH to execute.`
+      );
+    }
+
     const execTx = await safeSdk.executeTransaction(signedTx, {
       gasLimit: 500000, // Set explicit gas limit
       maxFeePerGas: ethers.utils.parseUnits(maxFeePerGas, "gwei").toString(),
@@ -98,14 +110,28 @@ export async function executeSafeTransactionWithRetry(
           );
           if (Number(maxFeePerGas) < maxFeePerGasLimitConst) {
             console.log("Speeding up with double gas price...");
-            executeSafeTransactionWithRetry(
+
+            //return String(Number(maxFeePerGas) * 2);
+
+            /* // Recreate SafeTransaction with updated gas params:
+            const newSafeTx = await safeSdk.createTransaction({
+              safeTransactionData: signedTx.data,
+            });
+
+            const newSignedTx = await safeSdk.signTransaction(newSafeTx); */
+
+            await executeSafeTransactionWithRetry(
               safeSdk,
+              //newSignedTx,
               signedTx,
               provider,
               onChainNonce,
               String(Number(maxFeePerGas) * 2)
             );
           } else {
+            console.error(
+              "Gas price too high, giving up on speeding up transaction."
+            );
             throw executionError;
           }
         }

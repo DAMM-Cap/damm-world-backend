@@ -15,3 +15,10 @@ def get_indexer_status(last_processed_block: int, latest_block: int, chain_id: i
     genesis_block_lagoon = get_lagoon_deployments(chain_id)['genesis_block_lagoon']
     percentage_behind = round((last_processed_block - genesis_block_lagoon) * 100 / (latest_block - genesis_block_lagoon), 2)
     return block_gap, percentage_behind
+
+def get_indexer_status_for_bot(last_processed_block: int, bot_last_processed_block: int, chain_id: int) -> float:
+    if bot_last_processed_block == 0:
+        return 100.0
+    genesis_block_lagoon = get_lagoon_deployments(chain_id)['genesis_block_lagoon']
+    percentage = round((last_processed_block - genesis_block_lagoon) * 100 / (bot_last_processed_block - genesis_block_lagoon), 2)
+    return min(percentage, 100.0)

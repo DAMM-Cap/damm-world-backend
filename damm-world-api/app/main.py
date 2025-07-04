@@ -6,6 +6,12 @@ from app.endpoints.get_user_position import router as get_user_position_router
 from app.endpoints.get_integrated_position import router as get_integrated_position_router
 from app.endpoints.get_keeper_txs import router as get_keeper_txs_router
 from app.endpoints.post_keeper_status import router as post_keeper_status_router
+from app.websockets.routes import router as public_ws_router
+from app.websockets.private import router as private_ws_router
+
+
+from app.redis_listener import register_redis_listener
+
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="DAMM World API", version="0.1.0")
@@ -27,6 +33,13 @@ app.include_router(get_user_position_router)
 app.include_router(get_integrated_position_router)
 app.include_router(get_keeper_txs_router)
 app.include_router(post_keeper_status_router)
+
+# Register WebSocket routers
+app.include_router(public_ws_router)
+app.include_router(private_ws_router)
+
+# Register Redis listener on app startup
+register_redis_listener(app)
 
 # Root endpoint for checking if the API is running
 @app.get("/")

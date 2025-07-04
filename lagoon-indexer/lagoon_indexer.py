@@ -15,7 +15,9 @@ from db.query.lagoon_events import LagoonEvents
 from db.utils.lagoon_db_date_utils import LagoonDbDateUtils
 from eth_utils import event_abi_to_log_topic
 from decimal import Decimal
-from utils.indexer_status import is_up_to_date, get_indexer_status
+from utils.indexer_status import is_up_to_date, get_indexer_status, get_indexer_status_for_bot
+from utils.redis_events import publish_bot_syncing_update, publish_settlement
+import asyncio
 
 # Event Formatter
 class EventFormatter:
@@ -233,7 +235,7 @@ class EventProcessor:
         self.save_to_db_batch('events', event_rows)
         self.save_to_db_batch('RedeemRequest', redeem_rows)
 
-    def store_Settlement_events(self, events: List[Dict], settlement_type: str):
+    async def store_Settlement_events(self, events: List[Dict], settlement_type: str):
         if settlement_type == 'deposit':
             update_func = LagoonEvents.update_settled_deposit_requests
             event_table = 'SettleDeposit'
@@ -253,11 +255,17 @@ class EventProcessor:
             snapshot_data_list.append(snapshot_data)
 
             # UPDATE the matching DepositRequest status
-            update_func(
+            wallets = update_func(
                 self.db,
                 self.vault_id,
                 event_data['event_timestamp']
             )
+
+            # PUBLISH the settlement to the wallets in parallel (asyncio) for efficiency improvement
+            tasks = []
+            for wallet in wallets:
+                tasks.append(publish_settlement(settlement_type, wallet, self.vault_id))
+            await asyncio.gather(*tasks)
 
         self.save_to_db_batch('events', event_data_list)
         self.save_to_db_batch(event_table, settle_data_list)
@@ -430,7 +438,7 @@ class LagoonIndexer:
         return [event_obj().process_log(log) for log in logs]
 
 
-    def fetch_and_store(self, from_block: int, range: int):
+    async def fetch_and_store(self, from_block: int, range: int):
         """
         Fetches and stores events for all configured event types.
         """
@@ -469,9 +477,9 @@ class LagoonIndexer:
                 elif event_name == 'RedeemRequest':
                     self.event_processor.store_RedeemRequest_events([event])
                 elif event_name == 'SettleDeposit':
-                    self.event_processor.store_Settlement_events([event], 'deposit')
+                    await self.event_processor.store_Settlement_events([event], 'deposit')
                 elif event_name == 'SettleRedeem':
-                    self.event_processor.store_Settlement_events([event], 'redeem')
+                    await self.event_processor.store_Settlement_events([event], 'redeem')
                 elif event_name == 'DepositRequestCanceled':
                     self.event_processor.store_DepositRequestCanceled_events([event])
                 elif event_name == 'Transfer':
@@ -492,7 +500,7 @@ class LagoonIndexer:
                 time.sleep(5)
                 self.blockchain = getEnvNode(self.chain_id)
 
-    def fetcher_loop(self):
+    async def fetcher_loop(self):
         """
         Processes a single range of blocks and updates the last processed block in the DB.
         Returns 1 if up to date.
@@ -518,7 +526,7 @@ class LagoonIndexer:
             from_block = last_processed_block + 1
             print(f"Processing block range {from_block} to {from_block + range_to_process}")
 
-            self.fetch_and_store(from_block, range_to_process)
+            await self.fetch_and_store(from_block, range_to_process)
             new_last_processed_block = from_block + range_to_process
             is_syncing = not is_up_to_date(new_last_processed_block, latest_block)
             LagoonDbUtils.update_last_processed_block(self.db, self.vault_id, self.chain_id, new_last_processed_block, is_syncing)
@@ -529,6 +537,11 @@ class LagoonIndexer:
             if (bot_last_processed_block <= new_last_processed_block):
                 LagoonDbUtils.update_bot_in_sync(self.db, self.vault_id, self.chain_id)
                 print(f"Updated bot status to in sync in DB.")
+            else:
+                bot_percentage_behind = get_indexer_status_for_bot(new_last_processed_block, bot_last_processed_block, self.chain_id)
+                print(f"Indexer is {bot_percentage_behind}% towards bot syncing.")
+                print(f"[fetcher_loop] Broadcasting bot percentage behind {bot_percentage_behind}")
+                await publish_bot_syncing_update(bot_percentage_behind)
 
             if self.real_time and self.sleep_time > 0:
                 print(f"Sleeping {self.sleep_time} seconds.")

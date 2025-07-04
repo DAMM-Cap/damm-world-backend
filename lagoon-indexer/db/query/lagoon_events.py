@@ -17,12 +17,23 @@ class LagoonEvents:
         SET status = 'settled', updated_at = %s, settled_at = %s
         WHERE vault_id = %s
           AND status = 'pending'
-          AND updated_at <= %s;
+          AND updated_at <= %s
+        RETURNING user_id;
         """
         conn = db.connection
         with conn.cursor() as cur:
             cur.execute(query, (settled_timestamp, settled_timestamp, vault_id, settled_timestamp))
+            updated_user_ids = [row[0] for row in cur.fetchall()]
+            wallets = []
+            if updated_user_ids:
+                cur.execute("""
+                    SELECT DISTINCT address
+                    FROM users
+                    WHERE user_id = ANY(%s::uuid[]);
+                """, (updated_user_ids,))
+                wallets = [row[0] for row in cur.fetchall()]
         conn.commit()
+        return wallets
 
     @staticmethod
     def update_canceled_deposit_request(db: Database, vault_id: str, request_id: int, cancel_timestamp: str):
@@ -57,12 +68,23 @@ class LagoonEvents:
         SET status = 'settled', updated_at = %s, settled_at = %s
         WHERE vault_id = %s
           AND status = 'pending'
-          AND updated_at <= %s;
+          AND updated_at <= %s
+        RETURNING user_id;
         """
         conn = db.connection
         with conn.cursor() as cur:
             cur.execute(query, (settled_timestamp, settled_timestamp, vault_id, settled_timestamp))
+            updated_user_ids = [row[0] for row in cur.fetchall()]
+            wallets = []
+            if updated_user_ids:
+                cur.execute("""
+                    SELECT DISTINCT address
+                    FROM users
+                    WHERE user_id = ANY(%s::uuid[]);
+                """, (updated_user_ids,))
+                wallets = [row[0] for row in cur.fetchall()]
         conn.commit()
+        return wallets
 
     @staticmethod
     def update_completed_deposit(db: Database, vault_id: str, user_id: str, timestamp: datetime):

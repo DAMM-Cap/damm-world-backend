@@ -6,3 +6,6 @@ watchdog
 pandas
 asyncpg==0.30.0
 numpy
+asyncio
+fastapi>=0.110
+redis>=4.2.0

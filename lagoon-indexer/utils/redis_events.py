@@ -15,12 +15,20 @@ async def publish_bot_syncing_update(bot_percentage_behind: float):
 async def publish_tx_confirmation(wallet: str, tx_hash: str):
     await publish_private_event(wallet, "bot_events", "tx_confirmed", {"tx_hash": tx_hash})
 
-async def publish_settlement(settlement_type: str, wallet: str, vault_id: str):
+async def publish_settled_status(settlement_type: str, wallet: str, tx_hash: str):
     try:
         if settlement_type == "deposit":
-            await publish_private_event(wallet, "bot_events", "deposit_settled", {"status": "settled", "vault_id": vault_id})
+            await publish_private_event(wallet, "bot_events", "deposit", {"status": "settled", "tx_hash": tx_hash})
         elif settlement_type == "redeem":
-            await publish_private_event(wallet, "bot_events", "redeem_settled", {"status": "settled", "vault_id": vault_id})
+            await publish_private_event(wallet, "bot_events", "redeem", {"status": "settled", "tx_hash": tx_hash})
     except Exception as e:
         print(f"[Error] Failed to publish settlement update for wallet {wallet}: {e}")
 
+async def publish_completed_status(tx_type: str, wallet: str, tx_hash: str):
+    try:
+        if tx_type == "deposit":
+            await publish_private_event(wallet, "bot_events", "deposit", {"status": "completed", "tx_hash": tx_hash})
+        elif tx_type == "redeem":
+            await publish_private_event(wallet, "bot_events", "redeem", {"status": "completed", "tx_hash": tx_hash})
+    except Exception as e:
+        print(f"[Error] Failed to publish completed status for wallet {wallet}: {e}")

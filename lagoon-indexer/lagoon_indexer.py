@@ -16,7 +16,7 @@ from db.utils.lagoon_db_date_utils import LagoonDbDateUtils
 from eth_utils import event_abi_to_log_topic
 from decimal import Decimal
 from utils.indexer_status import is_up_to_date, get_indexer_status, get_indexer_status_for_bot
-from utils.redis_events import publish_bot_syncing_update, publish_settlement
+from utils.redis_events import publish_bot_syncing_update, publish_settled_status, publish_completed_status
 import asyncio
 
 # Event Formatter
@@ -255,7 +255,7 @@ class EventProcessor:
             snapshot_data_list.append(snapshot_data)
 
             # UPDATE the matching DepositRequest status
-            wallets = update_func(
+            wallets, txs_hashes = update_func(
                 self.db,
                 self.vault_id,
                 event_data['event_timestamp']
@@ -263,8 +263,8 @@ class EventProcessor:
 
             # PUBLISH the settlement to the wallets in parallel (asyncio) for efficiency improvement
             tasks = []
-            for wallet in wallets:
-                tasks.append(publish_settlement(settlement_type, wallet, self.vault_id))
+            for wallet, tx_hash in zip(wallets, txs_hashes):
+                tasks.append(publish_settled_status(settlement_type, wallet, tx_hash))
             await asyncio.gather(*tasks)
 
         self.save_to_db_batch('events', event_data_list)
@@ -336,7 +336,7 @@ class EventProcessor:
 
         self.save_to_db_batch('events', event_data_list)
 
-    def store_Withdraw_events(self, events: List[Dict]):
+    async def store_Withdraw_events(self, events: List[Dict]):
         event_data_list = []
         return_data_list = []
         for event in events:
@@ -345,17 +345,23 @@ class EventProcessor:
             return_data_list.append(return_data)
             
             # UPDATE the matching RedeemRequest status
-            LagoonEvents.update_completed_redeem(
+            wallets, txs_hashes = LagoonEvents.update_completed_redeem(
                 self.db,
                 self.vault_id,
                 return_data['user_id'],
                 LagoonDbDateUtils.get_datetime_from_str(event_data['event_timestamp'])
             )
 
+            # PUBLISH the withdraw to the wallets in parallel (asyncio) for efficiency improvement
+            tasks = []
+            for wallet, tx_hash in zip(wallets, txs_hashes):
+                tasks.append(publish_completed_status("redeem", wallet, tx_hash))
+            await asyncio.gather(*tasks)
+
         self.save_to_db_batch('events', event_data_list)
         self.save_to_db_batch('Withdraw', return_data_list)
 
-    def store_Deposit_events(self, events: List[Dict]):
+    async def store_Deposit_events(self, events: List[Dict]):
         event_data_list = []
         return_data_list = []
         for event in events:
@@ -364,12 +370,18 @@ class EventProcessor:
             return_data_list.append(return_data)
             
             # UPDATE the matching DepositRequest status
-            LagoonEvents.update_completed_deposit(
+            wallets, txs_hashes = LagoonEvents.update_completed_deposit(
                 self.db,
                 self.vault_id,
                 return_data['user_id'],
                 LagoonDbDateUtils.get_datetime_from_str(event_data['event_timestamp'])
             )
+
+            # PUBLISH the withdraw to the wallets in parallel (asyncio) for efficiency improvement
+            tasks = []
+            for wallet, tx_hash in zip(wallets, txs_hashes):
+                tasks.append(publish_completed_status("deposit", wallet, tx_hash))
+            await asyncio.gather(*tasks)
 
         self.save_to_db_batch('events', event_data_list)
         self.save_to_db_batch('Deposit', return_data_list)
@@ -489,9 +501,9 @@ class LagoonIndexer:
                 elif event_name == 'RatesUpdated':
                     self.event_processor.store_RatesUpdated_events([event])
                 elif event_name == 'Withdraw':
-                    self.event_processor.store_Withdraw_events([event])
+                    await self.event_processor.store_Withdraw_events([event])
                 elif event_name == 'Deposit':
-                    self.event_processor.store_Deposit_events([event])
+                    await self.event_processor.store_Deposit_events([event])
                 elif event_name == 'Referral':
                     self.event_processor.store_Referral_events([event])
             except Exception as e:

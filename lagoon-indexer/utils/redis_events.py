@@ -1,4 +1,5 @@
 from broadcaster.redis_broadcaster import publish_public_event, publish_private_event
+from decimal import Decimal
 
 # ----- VAULT EVENTS -----
 
@@ -39,7 +40,7 @@ async def publish_canceled_status(wallet: str, tx_hash: str):
     except Exception as e:
         print(f"[Error] Failed to publish canceled status for wallet {wallet}: {e}")
 
-async def publish_deposit_request(event_timestamp: str, tx_hash: str, block_number: int, assets: int, controller_address: str):
+async def publish_deposit_request(event_timestamp: str, tx_hash: str, block_number: int, assets: Decimal, controller_address: str):
     try:
         await publish_private_event(
             controller_address, 
@@ -51,13 +52,13 @@ async def publish_deposit_request(event_timestamp: str, tx_hash: str, block_numb
                 "timestamp": event_timestamp, 
                 "tx_hash": tx_hash, 
                 "block": block_number,
-                "assets": assets
+                "assets": str(assets)
             }
         )
     except Exception as e:
         print(f"[Error] Failed to publish deposit request for controller {controller_address}: {e}")
 
-async def publish_redeem_request(event_timestamp: str, tx_hash: str, block_number: int, shares: int, controller_address: str):
+async def publish_redeem_request(event_timestamp: str, tx_hash: str, block_number: int, shares: Decimal, controller_address: str):
     try:
         await publish_private_event(
             controller_address, 
@@ -69,19 +70,19 @@ async def publish_redeem_request(event_timestamp: str, tx_hash: str, block_numbe
                 "timestamp": event_timestamp, 
                 "tx_hash": tx_hash, 
                 "block": block_number,
-                "shares": shares
+                "shares": str(shares)
             }
         )
     except Exception as e:
         print(f"[Error] Failed to publish redeem request for controller {controller_address}: {e}")
 
-async def publish_withdraw(wallet: str, event_timestamp: str, tx_hash: str, block_number: int, assets: int, shares: int):
+async def publish_withdraw(wallet: str, event_timestamp: str, tx_hash: str, block_number: int, assets: Decimal, shares: Decimal):
     try:
         await publish_private_event(wallet, "bot_events", "new_tx", {
             "source_table": "vault_returns",
             "return_type": "withdraw",
-            "assets": assets,
-            "shares": shares,
+            "assets": str(assets),
+            "shares": str(shares),
             "timestamp": event_timestamp,
             "tx_hash": tx_hash,
             "block": block_number,
@@ -89,7 +90,7 @@ async def publish_withdraw(wallet: str, event_timestamp: str, tx_hash: str, bloc
     except Exception as e:
         print(f"[Error] Failed to publish withdraw for wallet {wallet}: {e}")
 
-async def publish_transfer(event_timestamp: str, tx_hash: str, block_number: int, amount: int, from_address: str, to_address: str):
+async def publish_transfer(event_timestamp: str, tx_hash: str, block_number: int, amount: Decimal, from_address: str, to_address: str):
     try:
         await publish_private_event(
             from_address, 
@@ -101,7 +102,7 @@ async def publish_transfer(event_timestamp: str, tx_hash: str, block_number: int
                 "timestamp": event_timestamp, 
                 "tx_hash": tx_hash, 
                 "block": block_number,
-                "shares": amount,
+                "shares": str(amount),
                 "to_address": to_address
             }
         )
@@ -115,7 +116,7 @@ async def publish_transfer(event_timestamp: str, tx_hash: str, block_number: int
                 "timestamp": event_timestamp, 
                 "tx_hash": tx_hash, 
                 "block": block_number,
-                "shares": amount,
+                "shares": str(amount),
                 "from_address": from_address
             }
         )

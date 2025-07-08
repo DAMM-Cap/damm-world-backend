@@ -352,7 +352,17 @@ class EventProcessor:
             transfer_data_list.append(transfer_data)
 
             # PUBLISH the transfer in parallel (asyncio) for efficiency improvement
-            tasks.append(
+            # Skip publishing transfers from or to the lagoon or silo contracts
+            contract_addresses = [
+                get_lagoon_deployments(self.chain_id)['lagoon_address'].lower(),
+                get_lagoon_deployments(self.chain_id)['silo'].lower()
+            ]
+            if transfer_data['from_address'] in contract_addresses:
+                continue
+            elif transfer_data['to_address'] in contract_addresses:
+                continue
+            else:
+                tasks.append(
                 publish_transfer(
                     event_data['event_timestamp'],
                     event_data['transaction_hash'],

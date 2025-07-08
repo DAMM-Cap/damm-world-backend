@@ -1,5 +1,4 @@
 from db.db import Database
-from pandas import Series
 
 class LagoonEventsHelpers:
     @staticmethod

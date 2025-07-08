@@ -2,7 +2,7 @@ from db.db import Database
 from datetime import datetime
 from pandas import DataFrame
 from decimal import Decimal
-from lagoon_ev_helpers import LagoonEventsHelpers
+from .lagoon_ev_helpers import LagoonEventsHelpers
 
 class LagoonEvents:
     @staticmethod

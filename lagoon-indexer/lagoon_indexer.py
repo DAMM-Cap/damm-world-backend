@@ -413,7 +413,9 @@ class EventProcessor:
                         wallet, 
                         event_data['event_timestamp'],
                         event_data['transaction_hash'],
-                        event_data['block_number']
+                        event_data['block_number'],
+                        return_data['assets'],
+                        return_data['shares']
                     )
                 )
             await asyncio.gather(*tasks)

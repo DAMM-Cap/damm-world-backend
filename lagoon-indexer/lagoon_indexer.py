@@ -16,7 +16,8 @@ from db.utils.lagoon_db_date_utils import LagoonDbDateUtils
 from eth_utils import event_abi_to_log_topic
 from decimal import Decimal
 from utils.indexer_status import is_up_to_date, get_indexer_status, get_indexer_status_for_bot
-from utils.redis_events import publish_bot_syncing_update, publish_settled_status, publish_completed_status, publish_deposit_request, publish_redeem_request, publish_transfer, publish_canceled_status, publish_withdraw
+from utils.redis_events import publish_bot_syncing_update, publish_settled_status, publish_completed_status, publish_deposit_request, publish_redeem_request, publish_transfer, publish_canceled_status, publish_withdraw, publish_integrated_position
+from db.query.endpoints.lagoon_integrated_position import get_integrated_position
 import asyncio
 
 # Event Formatter
@@ -278,6 +279,7 @@ class EventProcessor:
         event_data_list = []
         settle_data_list = []
         snapshot_data_list = []
+        wallets = []
         for event in events:
             event_data, settle_data, snapshot_data = EventFormatter.format_Settlement_data(self.db, event, self.vault_id, settlement_type)
             event_data_list.append(event_data)
@@ -301,6 +303,13 @@ class EventProcessor:
         self.save_to_db_batch(event_table, settle_data_list)
         # INSERT a new vault_snapshot
         self.save_to_db_batch('VaultSnapshot', snapshot_data_list)
+
+        # PUBLISH the user's and vault's integrated position
+        tasks = []
+        for wallet in wallets:
+            integrated_position = get_integrated_position(wallet, 0, 20, self.chain_id)
+            tasks.append(publish_integrated_position(wallet, integrated_position))
+        await asyncio.gather(*tasks)
     
     def store_RatesUpdated_events(self, events: List[Dict]):
         event_data_list = []

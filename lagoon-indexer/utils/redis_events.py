@@ -1,5 +1,10 @@
 from broadcaster.redis_broadcaster import publish_public_event, publish_private_event
 from decimal import Decimal
+from typing import Dict, Any
+import datetime
+import uuid
+
+
 
 # ----- VAULT EVENTS -----
 
@@ -122,3 +127,19 @@ async def publish_transfer(event_timestamp: str, tx_hash: str, block_number: int
         )
     except Exception as e:
         print(f"[Error] Failed to publish transfer for from_address {from_address}: {e}")
+
+async def publish_integrated_position(wallet: str, integrated_position: Dict):
+    def make_json_safe(value: Any) -> Any:
+        if isinstance(value, dict):
+            return {k: make_json_safe(v) for k, v in value.items()}
+        elif isinstance(value, list):
+            return [make_json_safe(v) for v in value]
+        elif isinstance(value, (Decimal, datetime.datetime, uuid.UUID)):
+            return str(value)
+        else:
+            return value
+
+    try:
+        await publish_private_event(wallet, "bot_events", "integrated_position", make_json_safe(integrated_position))
+    except Exception as e:
+        print(f"[Error] Failed to publish integrated position for wallet {wallet}: {e}")

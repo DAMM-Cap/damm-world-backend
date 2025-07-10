@@ -127,7 +127,7 @@ async function main() {
   for (const batch of parsedCalls) {
     if (batch.length === 0) continue;
 
-    const signedTx = await buildAndSimulateTransaction(
+    let signedTx = await buildAndSimulateTransaction(
       safeSdk,
       provider,
       batch,
@@ -135,14 +135,57 @@ async function main() {
     );
 
     if (!justSimulate) {
+      const feeData = await provider.getFeeData();
+      if (!feeData.maxFeePerGas) {
+        throw new Error("Could not fetch current base fee from provider");
+      }
+
+      const baseFee = feeData.maxFeePerGas; // ethers.BigNumber
+      const priorityFee = ethers.utils.parseUnits("2", "gwei"); // typical tip value
+
+      // recommendedMaxFee = baseFee * 1.3 + priorityFee
+      const recommendedMaxFee = baseFee.mul(13).div(10).add(priorityFee);
+
+      const newMaxFeePerGas = ethers.utils.formatUnits(
+        recommendedMaxFee,
+        "gwei"
+      );
+      console.log(
+        `Calculated recommended maxFeePerGas: ${newMaxFeePerGas} gwei`
+      );
+
       await executeSafeTransactionWithRetry(
         safeSdk,
         signedTx,
         provider,
         onChainNonce,
-        "20"
+        newMaxFeePerGas || "20"
       );
 
+      /* 
+
+      let proposedMaxFeePerGas: string | undefined = "20";
+      while (!!proposedMaxFeePerGas) {
+        proposedMaxFeePerGas = await executeSafeTransactionWithRetry(
+          safeSdk,
+          signedTx,
+          provider,
+          onChainNonce,
+          proposedMaxFeePerGas
+        );
+
+        if (!!proposedMaxFeePerGas) {
+          console.log("Proposed max fee per gas: ", proposedMaxFeePerGas);
+          onChainNonce = await safeSdk.getNonce();
+          signedTx = await buildAndSimulateTransaction(
+            safeSdk,
+            provider,
+            batch,
+            onChainNonce
+          );
+        }
+      }
+ */
       // Update keeper status
       await updateKeeperStatus(
         network.chainId.toString(),

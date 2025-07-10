@@ -47,6 +47,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
+
     #command: ["python", "indexer.py", "480", "10", "2000", "1", "60"] ## Run on Worldchain
     #command: ["python", "indexer.py", "31337", "10", "2000", "1", "60"] ## Run on Anvil local fork
     #command: ["python", "indexer.py", "8453", "10", "2000", "1", "60"] ## Run on Base

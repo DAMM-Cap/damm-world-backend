@@ -211,18 +211,19 @@ class EventProcessor:
             LagoonEvents.insert_lagoon_events(self.db, df, table_name)
             print(f"Saved {len(event_data_list)} {event_name} events to {table_name}.")
 
-    def store_DepositRequest_events(self, events: List[Dict]):
+    async def store_DepositRequest_events(self, events: List[Dict]):
         event_rows = []
         deposit_rows = []
+        tasks = []
         for event in events:
             event_data, deposit_data = EventFormatter.format_DepositRequest_data(self.db, event, self.vault_id, self.chain_id)
             event_rows.append(event_data)
             deposit_rows.append(deposit_data)
-
+            
         self.save_to_db_batch('events', event_rows)
         self.save_to_db_batch('DepositRequest', deposit_rows)
 
-    def store_RedeemRequest_events(self, events: List[Dict]):
+    async def store_RedeemRequest_events(self, events: List[Dict]):
         event_rows = []
         redeem_rows = []
         for event in events:
@@ -233,7 +234,7 @@ class EventProcessor:
         self.save_to_db_batch('events', event_rows)
         self.save_to_db_batch('RedeemRequest', redeem_rows)
 
-    def store_Settlement_events(self, events: List[Dict], settlement_type: str):
+    async def store_Settlement_events(self, events: List[Dict], settlement_type: str):
         if settlement_type == 'deposit':
             update_func = LagoonEvents.update_settled_deposit_requests
             event_table = 'SettleDeposit'
@@ -246,6 +247,7 @@ class EventProcessor:
         event_data_list = []
         settle_data_list = []
         snapshot_data_list = []
+        wallets = []
         for event in events:
             event_data, settle_data, snapshot_data = EventFormatter.format_Settlement_data(self.db, event, self.vault_id, settlement_type)
             event_data_list.append(event_data)
@@ -253,7 +255,7 @@ class EventProcessor:
             snapshot_data_list.append(snapshot_data)
 
             # UPDATE the matching DepositRequest status
-            update_func(
+            wallets, txs_hashes = update_func(
                 self.db,
                 self.vault_id,
                 event_data['event_timestamp']
@@ -263,7 +265,7 @@ class EventProcessor:
         self.save_to_db_batch(event_table, settle_data_list)
         # INSERT a new vault_snapshot
         self.save_to_db_batch('VaultSnapshot', snapshot_data_list)
-    
+
     def store_RatesUpdated_events(self, events: List[Dict]):
         event_data_list = []
         rates_updated_data_list = []
@@ -283,14 +285,14 @@ class EventProcessor:
         
         self.save_to_db_batch('events', event_data_list)
 
-    def store_DepositRequestCanceled_events(self, events: List[Dict]):
+    async def store_DepositRequestCanceled_events(self, events: List[Dict]):
         event_data_list = []
         for event in events:
             event_data, deposit_request_canceled_data = EventFormatter.format_DepositRequestCanceled_data(event, self.vault_id)
             event_data_list.append(event_data)
 
             # UPDATE the matching DepositRequest status
-            LagoonEvents.update_canceled_deposit_request(
+            wallet, tx_hash = LagoonEvents.update_canceled_deposit_request(
                 self.db,
                 self.vault_id,
                 deposit_request_canceled_data['request_id'],
@@ -299,7 +301,7 @@ class EventProcessor:
 
         self.save_to_db_batch('events', event_data_list)
 
-    def store_Transfer_events(self, events: List[Dict]):
+    async def store_Transfer_events(self, events: List[Dict]):
         event_data_list = []
         transfer_data_list = []
         for event in events:
@@ -328,7 +330,7 @@ class EventProcessor:
 
         self.save_to_db_batch('events', event_data_list)
 
-    def store_Withdraw_events(self, events: List[Dict]):
+    async def store_Withdraw_events(self, events: List[Dict]):
         event_data_list = []
         return_data_list = []
         for event in events:
@@ -337,7 +339,7 @@ class EventProcessor:
             return_data_list.append(return_data)
             
             # UPDATE the matching RedeemRequest status
-            LagoonEvents.update_completed_redeem(
+            wallets, txs_hashes = LagoonEvents.update_completed_redeem(
                 self.db,
                 self.vault_id,
                 return_data['user_id'],
@@ -347,7 +349,7 @@ class EventProcessor:
         self.save_to_db_batch('events', event_data_list)
         self.save_to_db_batch('Withdraw', return_data_list)
 
-    def store_Deposit_events(self, events: List[Dict]):
+    async def store_Deposit_events(self, events: List[Dict]):
         event_data_list = []
         return_data_list = []
         for event in events:
@@ -356,7 +358,7 @@ class EventProcessor:
             return_data_list.append(return_data)
             
             # UPDATE the matching DepositRequest status
-            LagoonEvents.update_completed_deposit(
+            wallets, txs_hashes = LagoonEvents.update_completed_deposit(
                 self.db,
                 self.vault_id,
                 return_data['user_id'],
@@ -430,7 +432,7 @@ class LagoonIndexer:
         return [event_obj().process_log(log) for log in logs]
 
 
-    def fetch_and_store(self, from_block: int, range: int):
+    async def fetch_and_store(self, from_block: int, range: int):
         """
         Fetches and stores events for all configured event types.
         """
@@ -465,25 +467,25 @@ class LagoonIndexer:
             try:
                 event_name = event['event_name']
                 if event_name == 'DepositRequest':
-                    self.event_processor.store_DepositRequest_events([event])
+                    await self.event_processor.store_DepositRequest_events([event])
                 elif event_name == 'RedeemRequest':
-                    self.event_processor.store_RedeemRequest_events([event])
+                    await self.event_processor.store_RedeemRequest_events([event])
                 elif event_name == 'SettleDeposit':
-                    self.event_processor.store_Settlement_events([event], 'deposit')
+                    await self.event_processor.store_Settlement_events([event], 'deposit')
                 elif event_name == 'SettleRedeem':
-                    self.event_processor.store_Settlement_events([event], 'redeem')
+                    await self.event_processor.store_Settlement_events([event], 'redeem')
                 elif event_name == 'DepositRequestCanceled':
-                    self.event_processor.store_DepositRequestCanceled_events([event])
+                    await self.event_processor.store_DepositRequestCanceled_events([event])
                 elif event_name == 'Transfer':
-                    self.event_processor.store_Transfer_events([event])
+                    await self.event_processor.store_Transfer_events([event])
                 elif event_name == 'NewTotalAssetsUpdated':
                     self.event_processor.store_NewTotalAssetsUpdated_events([event])
                 elif event_name == 'RatesUpdated':
                     self.event_processor.store_RatesUpdated_events([event])
                 elif event_name == 'Withdraw':
-                    self.event_processor.store_Withdraw_events([event])
+                    await self.event_processor.store_Withdraw_events([event])
                 elif event_name == 'Deposit':
-                    self.event_processor.store_Deposit_events([event])
+                    await self.event_processor.store_Deposit_events([event])
                 elif event_name == 'Referral':
                     self.event_processor.store_Referral_events([event])
             except Exception as e:
@@ -492,7 +494,7 @@ class LagoonIndexer:
                 time.sleep(5)
                 self.blockchain = getEnvNode(self.chain_id)
 
-    def fetcher_loop(self):
+    async def fetcher_loop(self):
         """
         Processes a single range of blocks and updates the last processed block in the DB.
         Returns 1 if up to date.
@@ -518,7 +520,7 @@ class LagoonIndexer:
             from_block = last_processed_block + 1
             print(f"Processing block range {from_block} to {from_block + range_to_process}")
 
-            self.fetch_and_store(from_block, range_to_process)
+            await self.fetch_and_store(from_block, range_to_process)
             new_last_processed_block = from_block + range_to_process
             is_syncing = not is_up_to_date(new_last_processed_block, latest_block)
             LagoonDbUtils.update_last_processed_block(self.db, self.vault_id, self.chain_id, new_last_processed_block, is_syncing)
@@ -529,6 +531,8 @@ class LagoonIndexer:
             if (bot_last_processed_block <= new_last_processed_block):
                 LagoonDbUtils.update_bot_in_sync(self.db, self.vault_id, self.chain_id)
                 print(f"Updated bot status to in sync in DB.")
+            else:
+                print(f"Indexer is {bot_last_processed_block - new_last_processed_block} blocks away towards bot syncing.")
 
             if self.real_time and self.sleep_time > 0:
                 print(f"Sleeping {self.sleep_time} seconds.")

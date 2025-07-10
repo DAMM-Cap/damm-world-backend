@@ -6,6 +6,7 @@ from app.endpoints.get_user_position import router as get_user_position_router
 from app.endpoints.get_integrated_position import router as get_integrated_position_router
 from app.endpoints.get_keeper_txs import router as get_keeper_txs_router
 from app.endpoints.post_keeper_status import router as post_keeper_status_router
+
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="DAMM World API", version="0.1.0")

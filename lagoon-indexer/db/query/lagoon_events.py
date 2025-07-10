@@ -2,6 +2,7 @@ from db.db import Database
 from datetime import datetime
 from pandas import DataFrame
 from decimal import Decimal
+from .lagoon_ev_helpers import LagoonEventsHelpers
 
 class LagoonEvents:
     @staticmethod
@@ -17,12 +18,18 @@ class LagoonEvents:
         SET status = 'settled', updated_at = %s, settled_at = %s
         WHERE vault_id = %s
           AND status = 'pending'
-          AND updated_at <= %s;
+          AND updated_at <= %s
+        RETURNING user_id, event_id;
         """
         conn = db.connection
         with conn.cursor() as cur:
             cur.execute(query, (settled_timestamp, settled_timestamp, vault_id, settled_timestamp))
+            results = cur.fetchall()
+            updated_user_ids = [row[0] for row in results]
+            updated_event_ids = [row[1] for row in results]
         conn.commit()
+        wallets, txs_hashes = LagoonEventsHelpers.fetch_wallets_and_tx_hashes(db, updated_user_ids, updated_event_ids)
+        return wallets, txs_hashes
 
     @staticmethod
     def update_canceled_deposit_request(db: Database, vault_id: str, request_id: int, cancel_timestamp: str):
@@ -31,12 +38,18 @@ class LagoonEvents:
         SET status = 'canceled', updated_at = %s
         WHERE vault_id = %s
           AND request_id = %s
-          AND updated_at <= %s;
+          AND updated_at <= %s
+        RETURNING user_id, event_id;
         """
         conn = db.connection
         with conn.cursor() as cur:
             cur.execute(query, (cancel_timestamp, vault_id, request_id, cancel_timestamp))
+            results = cur.fetchall()
+            updated_user_ids = [row[0] for row in results]
+            updated_event_ids = [row[1] for row in results]
         conn.commit()
+        wallets, txs_hashes = LagoonEventsHelpers.fetch_wallets_and_tx_hashes(db, updated_user_ids, updated_event_ids)
+        return wallets, txs_hashes
 
     @staticmethod
     def update_vault_rates(db: Database, vault_id: str, management_rate: int, performance_rate: int, update_timestamp: str):
@@ -57,12 +70,18 @@ class LagoonEvents:
         SET status = 'settled', updated_at = %s, settled_at = %s
         WHERE vault_id = %s
           AND status = 'pending'
-          AND updated_at <= %s;
+          AND updated_at <= %s
+        RETURNING user_id, event_id;
         """
         conn = db.connection
         with conn.cursor() as cur:
             cur.execute(query, (settled_timestamp, settled_timestamp, vault_id, settled_timestamp))
+            results = cur.fetchall()
+            updated_user_ids = [row[0] for row in results]
+            updated_event_ids = [row[1] for row in results]
         conn.commit()
+        wallets, txs_hashes = LagoonEventsHelpers.fetch_wallets_and_tx_hashes(db, updated_user_ids, updated_event_ids)
+        return wallets, txs_hashes
 
     @staticmethod
     def update_completed_deposit(db: Database, vault_id: str, user_id: str, timestamp: datetime):
@@ -72,12 +91,18 @@ class LagoonEvents:
         WHERE vault_id = %s
           AND user_id = %s
           AND status = 'settled'
-          AND settled_at <= %s;
+          AND settled_at <= %s
+        RETURNING user_id, event_id;
         """
         conn = db.connection
         with conn.cursor() as cur:
             cur.execute(query, (timestamp, vault_id, user_id, timestamp))
+            results = cur.fetchall()
+            updated_user_ids = [row[0] for row in results]
+            updated_event_ids = [row[1] for row in results]
         conn.commit()
+        wallets, txs_hashes = LagoonEventsHelpers.fetch_wallets_and_tx_hashes(db, updated_user_ids, updated_event_ids)
+        return wallets, txs_hashes
     
     @staticmethod
     def update_completed_redeem(db: Database, vault_id: str, user_id: str, timestamp: datetime):
@@ -87,13 +112,19 @@ class LagoonEvents:
         WHERE vault_id = %s
           AND user_id = %s
           AND status = 'settled'
-          AND settled_at <= %s;
+          AND settled_at <= %s
+        RETURNING user_id, event_id;
         """
         conn = db.connection
         with conn.cursor() as cur:
             cur.execute(query, (timestamp, vault_id, user_id, timestamp))
+            results = cur.fetchall()
+            updated_user_ids = [row[0] for row in results]
+            updated_event_ids = [row[1] for row in results]
         conn.commit()
-    
+        wallets, txs_hashes = LagoonEventsHelpers.fetch_wallets_and_tx_hashes(db, updated_user_ids, updated_event_ids)
+        return wallets, txs_hashes
+        
     @staticmethod
     def update_vault_total_assets(db: Database, vault_id: str, total_assets: Decimal, update_timestamp: datetime):
         query = """

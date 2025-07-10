@@ -34,4 +34,4 @@ docker-compose run --rm indexer-base python db/run_schema.py
 
 # Launch services
 echo "Starting Lagoon services: indexer, api, bot..."
-docker-compose up damm-api indexer-base lagoon-bot redis
+docker-compose up damm-api indexer-base lagoon-bot

@@ -15,10 +15,7 @@ from db.query.lagoon_events import LagoonEvents
 from db.utils.lagoon_db_date_utils import LagoonDbDateUtils
 from eth_utils import event_abi_to_log_topic
 from decimal import Decimal
-from utils.indexer_status import is_up_to_date, get_indexer_status, get_indexer_status_for_bot
-from utils.redis_events import publish_bot_syncing_update, publish_settled_status, publish_completed_status, publish_deposit_request, publish_redeem_request, publish_transfer, publish_canceled_status, publish_withdraw, publish_integrated_position
-from db.query.endpoints.lagoon_integrated_position import get_integrated_position
-import asyncio
+from utils.indexer_status import is_up_to_date, get_indexer_status
 
 # Event Formatter
 class EventFormatter:
@@ -223,48 +220,19 @@ class EventProcessor:
             event_rows.append(event_data)
             deposit_rows.append(deposit_data)
             
-            # PUBLISH the deposit request in parallel (asyncio) for efficiency improvement
-            tasks.append(
-                publish_deposit_request(
-                    event_data['event_timestamp'],
-                    event_data['transaction_hash'],
-                    event_data['block_number'],
-                    deposit_data['assets'],
-                    deposit_data['controller_address']
-                )
-            )
-
         self.save_to_db_batch('events', event_rows)
         self.save_to_db_batch('DepositRequest', deposit_rows)
-
-        # PUBLISH the settlement to the wallets in parallel (asyncio) for efficiency improvement
-        await asyncio.gather(*tasks)
 
     async def store_RedeemRequest_events(self, events: List[Dict]):
         event_rows = []
         redeem_rows = []
-        tasks = []
         for event in events:
             event_data, redeem_data = EventFormatter.format_RedeemRequest_data(self.db, event, self.vault_id, self.chain_id)
             event_rows.append(event_data)
             redeem_rows.append(redeem_data)
 
-            # PUBLISH the redeem request in parallel (asyncio) for efficiency improvement
-            tasks.append(
-                publish_redeem_request(
-                    event_data['event_timestamp'],
-                    event_data['transaction_hash'],
-                    event_data['block_number'],
-                    redeem_data['shares'],
-                    redeem_data['controller_address']
-                )
-            )
-
         self.save_to_db_batch('events', event_rows)
         self.save_to_db_batch('RedeemRequest', redeem_rows)
-
-        # PUBLISH the settlement to the wallets in parallel (asyncio) for efficiency improvement
-        await asyncio.gather(*tasks)
 
     async def store_Settlement_events(self, events: List[Dict], settlement_type: str):
         if settlement_type == 'deposit':
@@ -293,24 +261,11 @@ class EventProcessor:
                 event_data['event_timestamp']
             )
 
-            # PUBLISH the settlement to the wallets in parallel (asyncio) for efficiency improvement
-            tasks = []
-            for wallet, tx_hash in zip(wallets, txs_hashes):
-                tasks.append(publish_settled_status(settlement_type, wallet, tx_hash))
-            await asyncio.gather(*tasks)
-
         self.save_to_db_batch('events', event_data_list)
         self.save_to_db_batch(event_table, settle_data_list)
         # INSERT a new vault_snapshot
         self.save_to_db_batch('VaultSnapshot', snapshot_data_list)
 
-        # PUBLISH the user's and vault's integrated position
-        tasks = []
-        for wallet in wallets:
-            integrated_position = get_integrated_position(wallet, 0, 20, self.chain_id)
-            tasks.append(publish_integrated_position(wallet, integrated_position))
-        await asyncio.gather(*tasks)
-    
     def store_RatesUpdated_events(self, events: List[Dict]):
         event_data_list = []
         rates_updated_data_list = []
@@ -332,7 +287,6 @@ class EventProcessor:
 
     async def store_DepositRequestCanceled_events(self, events: List[Dict]):
         event_data_list = []
-        tasks = []
         for event in events:
             event_data, deposit_request_canceled_data = EventFormatter.format_DepositRequestCanceled_data(event, self.vault_id)
             event_data_list.append(event_data)
@@ -345,48 +299,18 @@ class EventProcessor:
                 event_data['event_timestamp']
             )
 
-            # PUBLISH the canceled status to the wallets in parallel (asyncio) for efficiency improvement
-            tasks.append(publish_canceled_status(wallet, tx_hash))
-
         self.save_to_db_batch('events', event_data_list)
-        await asyncio.gather(*tasks)
 
     async def store_Transfer_events(self, events: List[Dict]):
         event_data_list = []
         transfer_data_list = []
-        tasks = []
         for event in events:
             event_data, transfer_data = EventFormatter.format_Transfer_data(event, self.vault_id)
             event_data_list.append(event_data)
             transfer_data_list.append(transfer_data)
 
-            # PUBLISH the transfer in parallel (asyncio) for efficiency improvement
-            # Skip publishing transfers from or to the lagoon or silo contracts
-            contract_addresses = [
-                get_lagoon_deployments(self.chain_id)['lagoon_address'].lower(),
-                get_lagoon_deployments(self.chain_id)['silo'].lower()
-            ]
-            if transfer_data['from_address'] in contract_addresses:
-                continue
-            elif transfer_data['to_address'] in contract_addresses:
-                continue
-            else:
-                tasks.append(
-                publish_transfer(
-                    event_data['event_timestamp'],
-                    event_data['transaction_hash'],
-                    event_data['block_number'],
-                    transfer_data['amount'],
-                    transfer_data['from_address'],
-                    transfer_data['to_address']
-                )
-            )
-
         self.save_to_db_batch('events', event_data_list)
         self.save_to_db_batch('Transfer', transfer_data_list)
-
-        # PUBLISH the settlement to the wallets in parallel (asyncio) for efficiency improvement
-        await asyncio.gather(*tasks)
 
     def store_NewTotalAssetsUpdated_events(self, events: List[Dict]):
         event_data_list = []
@@ -422,23 +346,6 @@ class EventProcessor:
                 LagoonDbDateUtils.get_datetime_from_str(event_data['event_timestamp'])
             )
 
-            # PUBLISH the withdraw to the wallets in parallel (asyncio) for efficiency improvement
-            # This tx requires status update of the rededem requests and incorporation of the withdraw tx itself
-            tasks = []
-            for wallet, tx_hash in zip(wallets, txs_hashes):
-                tasks.append(publish_completed_status("redeem", wallet, tx_hash))
-                tasks.append(
-                    publish_withdraw(
-                        wallet, 
-                        event_data['event_timestamp'],
-                        event_data['transaction_hash'],
-                        event_data['block_number'],
-                        return_data['assets'],
-                        return_data['shares']
-                    )
-                )
-            await asyncio.gather(*tasks)
-
         self.save_to_db_batch('events', event_data_list)
         self.save_to_db_batch('Withdraw', return_data_list)
 
@@ -457,12 +364,6 @@ class EventProcessor:
                 return_data['user_id'],
                 LagoonDbDateUtils.get_datetime_from_str(event_data['event_timestamp'])
             )
-
-            # PUBLISH the withdraw to the wallets in parallel (asyncio) for efficiency improvement
-            tasks = []
-            for wallet, tx_hash in zip(wallets, txs_hashes):
-                tasks.append(publish_completed_status("deposit", wallet, tx_hash))
-            await asyncio.gather(*tasks)
 
         self.save_to_db_batch('events', event_data_list)
         self.save_to_db_batch('Deposit', return_data_list)
@@ -631,10 +532,7 @@ class LagoonIndexer:
                 LagoonDbUtils.update_bot_in_sync(self.db, self.vault_id, self.chain_id)
                 print(f"Updated bot status to in sync in DB.")
             else:
-                bot_percentage_behind = get_indexer_status_for_bot(new_last_processed_block, bot_last_processed_block, self.chain_id)
-                print(f"Indexer is {bot_percentage_behind}% towards bot syncing.")
-                print(f"[fetcher_loop] Broadcasting bot percentage behind {bot_percentage_behind}")
-                await publish_bot_syncing_update(bot_percentage_behind)
+                print(f"Indexer is {bot_last_processed_block - new_last_processed_block} blocks away towards bot syncing.")
 
             if self.real_time and self.sleep_time > 0:
                 print(f"Sleeping {self.sleep_time} seconds.")

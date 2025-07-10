@@ -26,4 +26,4 @@ done
 echo "Postgres is healthy!"
 
 echo "Starting Lagoon services: indexer, api, bot..."
-docker-compose up damm-api indexer-base lagoon-bot redis
+docker-compose up damm-api indexer-base lagoon-bot

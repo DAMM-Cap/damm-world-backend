@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: damm-api
+    env: docker
+    plan: free
+    rootDir: damm-world-api
+    branch: main
+    buildFilter:
+      paths: ["damm-world-api/**", "shared/**"]
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: OTHER_ENV
+        sync: false
+
+  - type: worker
+    name: lagoon-indexer
+    env: docker
+    plan: free
+    rootDir: lagoon-indexer
+    branch: main
+    startCommand: python indexer.py 11155111 10 2000 1 60
+    buildFilter:
+      paths: ["lagoon-indexer/**", "shared/**"]
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+
+  - type: worker
+    name: keeper-bot
+    env: docker
+    plan: free
+    rootDir: bot
+    branch: main
+    startCommand: python keeper.py
+    buildFilter:
+      paths: ["bot/**", "shared/**"]
+    envVars:
+      - key: DATABASE_URL
+        sync: false

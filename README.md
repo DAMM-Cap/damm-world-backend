@@ -74,6 +74,8 @@ DATABASE_URL=postgresql://postgres:postgres@db:5432/lagoon
 
 ---
 
-## 📄 License
+## 📜 License
 
-MIT
+This project is licensed under the **Elastic License 2.0**. You may use, modify, and share this code for **non-commercial purposes**. Commercial use requires a commercial license from the author.
+
+See the [LICENSE](./LICENSE) file for more details.

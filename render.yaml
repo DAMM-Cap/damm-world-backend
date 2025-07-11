@@ -42,6 +42,8 @@ services:
     envVars:
       - key: DATABASE_URL
         sync: true
+      - key: API_URL
+        value: https://damm-api.onrender.com
 
   - type: worker
     name: lagoon-migrate

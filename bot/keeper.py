@@ -80,5 +80,6 @@ def wait_for_api_ready(url: str, timeout: int = 60, retry_interval: int = 3):
         time.sleep(retry_interval)
 
 if __name__ == "__main__":
-    wait_for_api_ready("http://damm-api:8000", timeout=20, retry_interval=3)
+    api_url = os.getenv("API_URL", "http://damm-api:8000")
+    wait_for_api_ready(api_url, timeout=20, retry_interval=3)
     run_bot_loop()

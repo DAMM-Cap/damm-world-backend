@@ -212,7 +212,7 @@ def insert_bot_status(db, vault_id, chain_id):
     print(f"Bot status inserted (or already exists).")
 
 def register_indexer(chain_id):
-    db = getEnvDb('damm-public')
+    db = getEnvDb(os.getenv('DB_NAME'))
     insert_chain(db, chain_id)
     vault_id = insert_vault(db, chain_id)
     insert_indexer_state(db, vault_id, chain_id)

@@ -2,6 +2,7 @@ from db.db import getEnvDb
 from typing import Dict, Any
 from core.lagoon_deployments import get_lagoon_deployments
 from .pagination_utils import PaginationUtils
+import os
 
 
 def get_data_query(table: str, owner_join_column: bool = False, offset: int = 0, limit: int = 20) -> str:
@@ -61,7 +62,7 @@ def get_data_query(table: str, owner_join_column: bool = False, offset: int = 0,
         """
 
 def get_user_txs(address: str, offset: int, limit: int, chain_id: int = 480) -> Dict[str, Any]:
-    db = getEnvDb('damm-public')
+    db = getEnvDb(os.getenv('DB_NAME'))
     lowercase_address = address.lower()
     contract_addresses = [
         get_lagoon_deployments(chain_id)['lagoon_address'].lower(),

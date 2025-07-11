@@ -1,5 +1,6 @@
 from db.db import getEnvDb
 from typing import Dict, Any, List
+import os
 
 def get_keepers_pending_txs_metadata(chain_id: int = 480) -> Dict[str, Any]:
     """
@@ -11,7 +12,7 @@ def get_keepers_pending_txs_metadata(chain_id: int = 480) -> Dict[str, Any]:
         pendingRedeem: bool
         settledDeposit: list of controllers
     """
-    db = getEnvDb('damm-public')
+    db = getEnvDb(os.getenv('DB_NAME'))
     
     vaults_query = """
         SELECT v.vault_id, v.price_oracle_address, v.safe_address, t.address as underlying_token_address

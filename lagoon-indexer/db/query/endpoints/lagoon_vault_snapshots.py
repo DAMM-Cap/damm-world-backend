@@ -2,6 +2,7 @@ from db.db import getEnvDb
 from typing import Dict, Any
 from core.lagoon_deployments import get_lagoon_deployments
 from .pagination_utils import PaginationUtils
+import os
 
 def get_vault_snapshots_data_query(offset: int = 0, limit: int = 20) -> str:
     """Custom data query for vault snapshots."""
@@ -31,7 +32,7 @@ def get_vault_snapshots(vault_id: str, offset: int, limit: int, chain_id: int = 
     """
     Get vault snapshots for a specific vault.
     """
-    db = getEnvDb('damm-public')
+    db = getEnvDb(os.getenv('DB_NAME'))
 
     # Use the enhanced PaginationUtils for custom queries
     result = PaginationUtils.get_custom_paginated_results(

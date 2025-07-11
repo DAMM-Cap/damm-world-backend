@@ -1,4 +1,5 @@
 from db import getEnvDb
+import os
 
 def execute_sql_file(file_path: str) -> bool:
     try:
@@ -42,7 +43,7 @@ def truncate_event_tables():
         conn.commit()
 
 if __name__ == "__main__":
-    db = getEnvDb('damm-public')
+    db = getEnvDb(os.getenv('DB_NAME'))
     if execute_sql_file("db/schema.sql"):
         truncate_event_tables()
     db.closeConnection()

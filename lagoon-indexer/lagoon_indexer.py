@@ -405,7 +405,7 @@ class LagoonIndexer:
             address=self.lagoon,
             abi=lagoon_abi
         )
-        self.db = getEnvDb('damm-public')
+        self.db = getEnvDb(os.getenv('DB_NAME'))
         self.event_processor = EventProcessor(self.db, self.lagoon, self.vault_id, self.chain_id)
 
     def get_block_ts(self, event: Dict) -> str:

@@ -1,6 +1,7 @@
 from db.db import getEnvDb
 from typing import Dict, Any
 from db.query.lagoon_db_utils import LagoonDbUtils
+import os
 
 def update_keeper_status(
     chain_id: int,
@@ -22,7 +23,7 @@ def update_keeper_status(
     """
     try:
         # Initialize database connection
-        db = getEnvDb('damm-public')
+        db = getEnvDb(os.getenv('DB_NAME'))
 
         # 1) Check vault exists
         vaults_query = """

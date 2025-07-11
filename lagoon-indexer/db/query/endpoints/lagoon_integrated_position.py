@@ -1,6 +1,7 @@
 from db.db import getEnvDb
 from typing import Dict, Any
 from .pagination_utils import PaginationUtils
+import os
 
 def get_integrated_position_data_query(offset: int = 0, limit: int = 20) -> str:
     return f"""
@@ -237,7 +238,7 @@ def get_integrated_position(address: str, offset: int, limit: int, chain_id: int
     """
     Get user positions across all vaults by constructing data on the fly from multiple tables.
     """
-    db = getEnvDb('damm-public')
+    db = getEnvDb(os.getenv('DB_NAME'))
     lowercase_address = address.lower()
 
     print(f"DEBUG: Looking for user {lowercase_address} on chain {chain_id}")

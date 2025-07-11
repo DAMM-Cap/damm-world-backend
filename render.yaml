@@ -22,7 +22,7 @@ services:
     rootDir: .
     branch: main
     buildCommand: docker build -f lagoon-indexer/Dockerfile -t lagoon-indexer .
-    startCommand: docker run lagoon-indexer python indexer.py 11155111 10 2000 1 60
+    startCommand: python indexer.py 11155111 10 2000 1 60
     buildFilter:
       paths: ["lagoon-indexer/**", "damm-world-api/**", "shared/**"]
     envVars:
@@ -36,7 +36,7 @@ services:
     rootDir: .
     branch: main
     buildCommand: docker build -f bot/Dockerfile -t keeper-bot .
-    startCommand: docker run keeper-bot python keeper.py
+    startCommand: python keeper.py
     buildFilter:
       paths: ["bot/**", "lagoon-indexer/**", "damm-world-api/**", "shared/**"]
     envVars:

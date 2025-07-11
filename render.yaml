@@ -3,13 +3,15 @@ services:
     name: damm-api
     env: docker
     plan: free
-    rootDir: damm-world-api
+    rootDir: .
     branch: main
+    buildCommand: docker build -f damm-world-api/Dockerfile -t damm-api .
+    startCommand: docker run damm-api
     buildFilter:
-      paths: ["damm-world-api/**", "shared/**"]
+      paths: ["damm-world-api/**", "shared/**", "lagoon-indexer/**"]
     envVars:
       - key: DATABASE_URL
-        sync: false
+        sync: true
       - key: OTHER_ENV
         sync: false
 
@@ -17,24 +19,32 @@ services:
     name: lagoon-indexer
     env: docker
     plan: free
-    rootDir: lagoon-indexer
+    rootDir: .
     branch: main
-    startCommand: python indexer.py 11155111 10 2000 1 60
+    buildCommand: docker build -f lagoon-indexer/Dockerfile -t lagoon-indexer .
+    startCommand: docker run lagoon-indexer python indexer.py 11155111 10 2000 1 60
     buildFilter:
-      paths: ["lagoon-indexer/**", "shared/**"]
+      paths: ["lagoon-indexer/**", "damm-world-api/**", "shared/**"]
     envVars:
       - key: DATABASE_URL
-        sync: false
+        sync: true
 
   - type: worker
     name: keeper-bot
     env: docker
     plan: free
-    rootDir: bot
+    rootDir: .
     branch: main
-    startCommand: python keeper.py
+    buildCommand: docker build -f bot/Dockerfile -t keeper-bot .
+    startCommand: docker run keeper-bot python keeper.py
     buildFilter:
-      paths: ["bot/**", "shared/**"]
+      paths: ["bot/**", "lagoon-indexer/**", "damm-world-api/**", "shared/**"]
     envVars:
       - key: DATABASE_URL
-        sync: false
+        sync: true
+
+databases:
+  - name: lagoon-db
+    plan: free
+    databaseName: lagoon
+    user: lagoon_user

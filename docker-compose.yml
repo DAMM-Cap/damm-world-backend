@@ -16,7 +16,9 @@ services:
       retries: 5
 
   damm-api:
-    build: ./damm-world-api
+    build:
+      context: .
+      dockerfile: damm-world-api/Dockerfile
     container_name: damm_world_api
     restart: always
     env_file:
@@ -36,7 +38,9 @@ services:
         condition: service_started
 
   indexer-base:
-    build: ./lagoon-indexer
+    build:
+      context: .
+      dockerfile: lagoon-indexer/Dockerfile
     container_name: lagoon_indexer_base
     restart: always
     env_file:
@@ -55,7 +59,9 @@ services:
     command: ["python", "indexer.py", "11155111", "10", "2000", "1", "60"] ## Run on Sepolia
 
   lagoon-bot:
-    build: ./bot
+    build:
+      context: .
+      dockerfile: bot/Dockerfile
     container_name: damm_bot
     restart: always
     env_file:

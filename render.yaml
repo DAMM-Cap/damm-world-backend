@@ -43,6 +43,21 @@ services:
       - key: DATABASE_URL
         sync: true
 
+  - type: worker
+    name: lagoon-migrate
+    env: docker
+    plan: free
+    rootDir: .
+    branch: main
+    buildCommand: docker build -f lagoon-indexer/Dockerfile -t lagoon-migrate .
+    startCommand: python db/run_schema.py
+    autoDeploy: false
+    buildFilter:
+      paths: ["lagoon-indexer/**", "damm-world-api/**", "shared/**"]
+    envVars:
+      - key: DATABASE_URL
+        sync: true
+
 databases:
   - name: lagoon-db
     plan: free

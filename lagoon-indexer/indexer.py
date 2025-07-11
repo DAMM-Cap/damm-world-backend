@@ -67,5 +67,12 @@ async def main():
     print(f"Indexer stopped after {time.time() - start_time:.2f} seconds.")
 
 if __name__ == "__main__":
-    asyncio.run(main())
-    #main()
+    while True:
+        try:
+            asyncio.run(main())
+        except Exception as e:
+            print(f"Uncaught error in main loop: {e}")
+            traceback.print_exc()
+
+        print("Main indexer loop completed. Restarting in 5 seconds...\n")
+        time.sleep(5)

@@ -24,10 +24,12 @@ COPY lagoon-indexer/utils /app/utils
 # --- 5. Copy bot code
 COPY bot /app
 
-# --- 6. Install Node dependencies for bot
-RUN rm -rf node_modules && yarn install
+# --- 6. Fix node_modules & install dependencies correctly inside container
+WORKDIR /app/safe-tx
+RUN rm -rf node_modules && yarn install --ignore-scripts
 
 # --- 7. Set environment
+WORKDIR /app
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
 

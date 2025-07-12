@@ -21,3 +21,6 @@ venv/
 
 # Docker build cache (but not Dockerfile!)
 **/.dockerignore
+
+node_modules
+**/node_modules

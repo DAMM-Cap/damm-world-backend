@@ -5,8 +5,7 @@ def run_safe_tx(*batched_args):
     cmd = [
         "yarn",
         "--cwd", "safe-tx",
-        "tsx",
-        "send_safe_tx.ts",
+        "send",
         *batched_args
     ]
     print("Running command:", " ".join(cmd))

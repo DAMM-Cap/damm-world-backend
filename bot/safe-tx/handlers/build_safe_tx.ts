@@ -1,7 +1,7 @@
 import { Interface } from "@ethersproject/abi";
 import { BigNumber } from "@ethersproject/bignumber";
 
-import { LAGOON_ABI } from "./lagoon_abi.ts";
+import { LAGOON_ABI } from "./lagoon_abi";
 
 export function buildSafeTransactionData(
   method: string,

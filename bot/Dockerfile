@@ -25,7 +25,7 @@ COPY lagoon-indexer/utils /app/utils
 COPY bot /app
 
 # --- 6. Install Node dependencies for bot
-RUN yarn install
+RUN rm -rf node_modules && yarn install
 
 # --- 7. Set environment
 ENV PYTHONUNBUFFERED=1

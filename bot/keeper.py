@@ -1,22 +1,21 @@
 import os
 import time
 from dotenv import load_dotenv
-#from tx_utils import keeper_txs_handler
 from safe_tx_utils import keeper_txs_handler
 import requests
 
 load_dotenv()
 
-def fetch_keeper_txs(chain_id):
-    url = f"http://damm-api:8000/lagoon/keeper_txs/test/{chain_id}"
+def fetch_keeper_txs(api_url, chain_id):
+    url = f"{api_url}/lagoon/keeper_txs/test/{chain_id}"
     response = requests.get(url)
     response.raise_for_status()
     return response.json()
 
-def run_bot():
+def run_bot(api_url):
     try:
         chain_id = int(os.getenv("CHAIN_ID", "480"))
-        pending = fetch_keeper_txs(chain_id)
+        pending = fetch_keeper_txs(api_url, chain_id)
         
         # Handle different response statuses
         if pending.get("status") == "syncing":
@@ -45,14 +44,14 @@ def run_bot():
         print(f"Bot execution failed: {e}")
         raise
 
-def run_bot_loop():
+def run_bot_loop(api_url):
     print("Starting keeper bot in infinite loop mode.....")
     sleep_interval = int(os.getenv("BOT_SLEEP_INTERVAL", "60"))
 
     while True:
         try:
             print(f"\n--- Bot cycle started at {time.strftime('%Y-%m-%d %H:%M:%S')} ---")
-            run_bot()
+            run_bot(api_url)
             print(f"--- Bot cycle completed, sleeping for {sleep_interval} seconds ---")
             time.sleep(sleep_interval)
         except KeyboardInterrupt:
@@ -82,4 +81,4 @@ def wait_for_api_ready(url: str, timeout: int = 60, retry_interval: int = 3):
 if __name__ == "__main__":
     api_url = os.getenv("API_URL", "http://damm-api:8000")
     wait_for_api_ready(api_url, timeout=20, retry_interval=3)
-    run_bot_loop()
+    run_bot_loop(api_url)

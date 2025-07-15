@@ -46,6 +46,8 @@ services:
         sync: true
       - key: API_URL
         value: https://damm-api.onrender.com
+      - key: SUPPORTED_CHAINS
+        value: "11155111,8453"
 
   - type: worker
     name: lagoon-migrate

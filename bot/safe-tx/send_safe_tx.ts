@@ -80,33 +80,43 @@ async function buildAndSimulateTransaction(
   return signedTx;
 }
 
-function getCliArg(flag: string): string | undefined {
-  const idx = process.argv.indexOf(flag);
-  if (idx !== -1 && idx + 1 < process.argv.length) {
-    return process.argv[idx + 1];
+function parseCliArgs(): { rpcUrl?: string; batchArgs: string[] } {
+  const fullArgs = process.argv.slice(2);
+  const batchArgs: string[] = [];
+  let rpcUrl: string | undefined;
+
+  for (let i = 0; i < fullArgs.length; i++) {
+    if (fullArgs[i] === "--rpc-url" && i + 1 < fullArgs.length) {
+      rpcUrl = fullArgs[i + 1];
+      i++; // skip value
+    } else {
+      batchArgs.push(fullArgs[i]);
+    }
   }
-  console.log("No argument found for flag:", flag);
-  return undefined;
+
+  return { rpcUrl, batchArgs };
 }
 
 async function main() {
   console.log("Script started");
 
-  const args = process.argv
-    .slice(2)
-    .filter((arg) => !arg.startsWith("--rpc-url"));
+  const { rpcUrl, batchArgs } = parseCliArgs();
+  const finalRpcUrl = rpcUrl || process.env.RPC_URL;
 
-  if (args.length < 3) {
+  if (!finalRpcUrl) {
+    throw new Error(
+      "RPC URL must be provided via --rpc-url or RPC_URL env var"
+    );
+  }
+
+  if (batchArgs.length < 3) {
     console.error(
       "Usage: ts-node send_safe_tx.ts [--rpc-url <url>] <method> <contract> <args...> [repeat...]"
     );
     //process.exit(1);
   }
 
-  const rpcUrl = getCliArg("--rpc-url");
-  if (!rpcUrl) throw new Error("RPC URL must be provided via --rpc-url");
-
-  const provider = new JsonRpcProvider(rpcUrl);
+  const provider = new JsonRpcProvider(finalRpcUrl);
   const signer = new Wallet(process.env.SAFE_OWNER_PRIVATE_KEY!, provider);
 
   const ethAdapter = new EthersAdapter({
@@ -133,7 +143,7 @@ async function main() {
     safeAddress: process.env.SAFE_ADDRESS!,
   });
 
-  const parsedCalls = parseBatchedCalls(args);
+  const parsedCalls = parseBatchedCalls(batchArgs);
   console.log("Parsed calls: ", parsedCalls);
   let onChainNonce = await safeSdk.getNonce();
   const justSimulate = process.env.JUST_SIMULATE === "true";

@@ -56,7 +56,19 @@ services:
     #command: ["python", "indexer.py", "31337", "10", "2000", "1", "60"] ## Run on Anvil local fork
     #command: ["python", "indexer.py", "8453", "10", "2000", "1", "60"] ## Run on Base
     #command: ["python", "indexer.py", "1", "10", "2000", "1", "60"] ## Run on Mainnet
-    command: ["python", "indexer.py", "11155111", "10", "2000", "1", "60"] ## Run on Sepolia
+    #command: ["python", "indexer.py", "11155111", "10", "2000", "1", "60"] ## Run on Sepolia
+    command: [
+        "python",
+        "indexer.py",
+        "--sleep_time",
+        "10",
+        "--range",
+        "2000",
+        "--real_time",
+        "1",
+        "--run_time",
+        "60",
+      ] ## Multiple chains on env var SUPPORTED_CHAINS
 
   lagoon-bot:
     build:

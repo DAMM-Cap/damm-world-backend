@@ -22,12 +22,14 @@ services:
     rootDir: .
     branch: main
     buildCommand: docker build -f lagoon-indexer/Dockerfile -t lagoon-indexer .
-    startCommand: python indexer.py 11155111 10 2000 1 60
+    startCommand: python indexer.py --sleep_time 10 --range 2000 --real_time 1 --run_time 60
     buildFilter:
       paths: ["lagoon-indexer/**", "damm-world-api/**", "shared/**"]
     envVars:
       - key: DATABASE_URL
         sync: true
+      - key: SUPPORTED_CHAINS
+        value: "11155111,8453"
 
   - type: worker
     name: keeper-bot

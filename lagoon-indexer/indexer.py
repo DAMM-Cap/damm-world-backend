@@ -11,68 +11,105 @@ from lagoon_indexer import LagoonIndexer
 from constants.abi.lagoon import LAGOON_ABI
 from db.register_indexer import register_indexer
 
-async def main():
-    load_dotenv()
+events_to_track = [
+    "DepositRequest", 
+    "RedeemRequest", 
+    "SettleDeposit", 
+    "SettleRedeem", 
+    "Deposit", 
+    "Withdraw", 
+    "DepositRequestCanceled", 
+    "Transfer", 
+    "NewTotalAssetsUpdated",
+    "RatesUpdated",
+    "Referral"
+]
 
-    parser = argparse.ArgumentParser(description='Lagoon Indexer')
-    parser.add_argument('chain_id', type=int, help='Chain ID')
-    parser.add_argument('sleep_time', type=int, help='Sleep time between iterations')
-    parser.add_argument('range', type=int, help='Block range to process')
-    parser.add_argument('real_time', type=int, help='Whether to run in real-time mode (1) or one-shot (0)')
-    parser.add_argument('run_time', type=int, help='Run time in seconds')
-
-    args = parser.parse_args()
-
-    vault_id = register_indexer(args.chain_id)
-
-    real_time = bool(args.real_time)
-
-    events_to_track = [
-        "DepositRequest", 
-        "RedeemRequest", 
-        "SettleDeposit", 
-        "SettleRedeem", 
-        "Deposit", 
-        "Withdraw", 
-        "DepositRequestCanceled", 
-        "Transfer", 
-        "NewTotalAssetsUpdated",
-        "RatesUpdated",
-        "Referral"
-    ]
+async def run_indexer(
+    chain_id: int,
+    sleep_time: int,
+    range: int,
+    real_time: bool,
+    run_time: int
+) -> None:
+    vault_id = register_indexer(chain_id)
 
     indexer = LagoonIndexer(
         lagoon_abi=LAGOON_ABI,
-        chain_id=args.chain_id,
-        sleep_time=args.sleep_time,
-        range=args.range,
+        chain_id=chain_id,
+        sleep_time=sleep_time,
+        range=range,
         event_names=events_to_track,
         real_time=real_time,
-        vault_id=vault_id, 
+        vault_id=vault_id,
     )
 
     start_time = time.time()
-    print("Lagoon Indexer is starting...")
+    print(f"[{chain_id}] Indexer started.")
 
-    while time.time() - start_time < args.run_time:
+    while time.time() - start_time < run_time:
         try:
             if await indexer.fetcher_loop() == 1:
                 break
         except Exception as e:
-            print(f"Error in indexer loop: {e}")
+            print(f"[{chain_id}] Error in fetcher loop: {e}")
             traceback.print_exc()
-            print(f"Sleeping {args.sleep_time} seconds before retrying...")
-            time.sleep(args.sleep_time)
+            print(f"[{chain_id}] Sleeping {sleep_time}s before retrying...")
+            await asyncio.sleep(sleep_time)
 
-    print(f"Indexer stopped after {time.time() - start_time:.2f} seconds.")
+    print(f"[{chain_id}] Indexer exited after {time.time() - start_time:.2f}s.")
 
-if __name__ == "__main__":
+async def launch_forever(
+    chain_id: int,
+    sleep_time: int,
+    range: int,
+    real_time: bool,
+    run_time: int
+) -> None:
     while True:
         try:
-            asyncio.run(main())
+            await run_indexer(chain_id, sleep_time, range, real_time, run_time)
         except Exception as e:
-            print(f"Uncaught error in main loop: {e}")
+            print(f"[{chain_id}] Indexer crashed: {e}")
             traceback.print_exc()
+        print(f"[{chain_id}] Restarting in 5 seconds...\n")
+        await asyncio.sleep(5)
 
-        print("Main indexer loop completed. Restarting in 5 seconds...\n")
-        time.sleep(5)
+async def main() -> None:
+    load_dotenv()
+
+    chain_ids = os.getenv("SUPPORTED_CHAINS", "")
+    if not chain_ids:
+        raise ValueError("SUPPORTED_CHAINS env var must be defined")
+
+    chain_ids = [int(cid.strip()) for cid in chain_ids.split(",")]
+
+    parser = argparse.ArgumentParser(description='Lagoon Multi-Chain Indexer')
+    parser.add_argument('--sleep_time', type=int, required=True, help='Sleep time between fetches')
+    parser.add_argument('--range', type=int, required=True, help='Block range to process per iteration')
+    parser.add_argument('--real_time', type=int, choices=[0, 1], required=True, help='1 = real-time, 0 = one-shot')
+    parser.add_argument('--run_time', type=int, required=True, help='Indexer run time in seconds before recycle')
+
+    args = parser.parse_args()
+
+    tasks = [
+        asyncio.create_task(
+            launch_forever(
+                chain_id=chain_id,
+                sleep_time=args.sleep_time,
+                range=args.range,
+                real_time=bool(args.real_time),
+                run_time=args.run_time,
+            )
+        )
+        for chain_id in chain_ids
+    ]
+
+    await asyncio.gather(*tasks)
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except Exception as e:
+        print(f"Fatal error in top-level indexer: {e}")
+        traceback.print_exc()

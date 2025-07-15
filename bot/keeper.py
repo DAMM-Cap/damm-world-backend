@@ -1,5 +1,6 @@
 import os
 import time
+import asyncio
 from dotenv import load_dotenv
 from safe_tx_utils import keeper_txs_handler
 import requests
@@ -12,9 +13,8 @@ def fetch_keeper_txs(api_url, chain_id):
     response.raise_for_status()
     return response.json()
 
-def run_bot(api_url):
+def run_bot(chain_id, api_url):
     try:
-        chain_id = int(os.getenv("CHAIN_ID", "480"))
         pending = fetch_keeper_txs(api_url, chain_id)
         
         # Handle different response statuses
@@ -44,14 +44,11 @@ def run_bot(api_url):
         print(f"Bot execution failed: {e}")
         raise
 
-def run_bot_loop(api_url):
-    print("Starting keeper bot in infinite loop mode.....")
-    sleep_interval = int(os.getenv("BOT_SLEEP_INTERVAL", "60"))
-
+def run_bot_loop(chain_id, api_url, sleep_interval):
     while True:
         try:
             print(f"\n--- Bot cycle started at {time.strftime('%Y-%m-%d %H:%M:%S')} ---")
-            run_bot(api_url)
+            run_bot(chain_id, api_url)
             print(f"--- Bot cycle completed, sleeping for {sleep_interval} seconds ---")
             time.sleep(sleep_interval)
         except KeyboardInterrupt:
@@ -62,6 +59,29 @@ def run_bot_loop(api_url):
             print(f"Retrying in {sleep_interval} seconds...")
             time.sleep(sleep_interval)
 
+async def run_parallel_bots(api_url):
+    print("Starting keeper bot in infinite loop mode.....")
+    sleep_interval = int(os.getenv("BOT_SLEEP_INTERVAL", "60"))
+
+    chain_ids = os.getenv("SUPPORTED_CHAINS", "")
+    if not chain_ids:
+        raise ValueError("SUPPORTED_CHAINS env var must be defined")
+
+    chain_ids = [int(cid.strip()) for cid in chain_ids.split(",")]
+
+    tasks = [
+        asyncio.create_task(
+            run_bot_loop(
+                chain_id=chain_id,
+                api_url=api_url,
+                sleep_interval=sleep_interval,
+            )
+        )
+        for chain_id in chain_ids
+    ]
+
+    await asyncio.gather(*tasks)
+    
 def wait_for_api_ready(url: str, timeout: int = 60, retry_interval: int = 3):
     print(f"Waiting for API to be ready at {url}...")
     start = time.time()
@@ -81,4 +101,4 @@ def wait_for_api_ready(url: str, timeout: int = 60, retry_interval: int = 3):
 if __name__ == "__main__":
     api_url = os.getenv("API_URL", "http://damm-api:8000")
     wait_for_api_ready(api_url, timeout=20, retry_interval=3)
-    run_bot_loop(api_url)
+    asyncio.run(run_parallel_bots(api_url))

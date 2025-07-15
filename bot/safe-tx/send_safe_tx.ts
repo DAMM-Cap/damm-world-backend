@@ -80,19 +80,33 @@ async function buildAndSimulateTransaction(
   return signedTx;
 }
 
+function getCliArg(flag: string): string | undefined {
+  const idx = process.argv.indexOf(flag);
+  if (idx !== -1 && idx + 1 < process.argv.length) {
+    return process.argv[idx + 1];
+  }
+  console.log("No argument found for flag:", flag);
+  return undefined;
+}
+
 async function main() {
   console.log("Script started");
 
-  const args = process.argv.slice(2);
+  const args = process.argv
+    .slice(2)
+    .filter((arg) => !arg.startsWith("--rpc-url"));
 
   if (args.length < 3) {
     console.error(
-      "Usage: ts-node send_safe_tx.ts <method> <contract> <args...> [repeat...]"
+      "Usage: ts-node send_safe_tx.ts [--rpc-url <url>] <method> <contract> <args...> [repeat...]"
     );
     //process.exit(1);
   }
 
-  const provider = new JsonRpcProvider(process.env.RPC_URL!);
+  const rpcUrl = getCliArg("--rpc-url");
+  if (!rpcUrl) throw new Error("RPC URL must be provided via --rpc-url");
+
+  const provider = new JsonRpcProvider(rpcUrl);
   const signer = new Wallet(process.env.SAFE_OWNER_PRIVATE_KEY!, provider);
 
   const ethAdapter = new EthersAdapter({

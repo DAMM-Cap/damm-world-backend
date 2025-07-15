@@ -9,6 +9,7 @@ import asyncio
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from lagoon_indexer import LagoonIndexer
 from constants.abi.lagoon import LAGOON_ABI
+from core.lagoon_deployments import get_lagoon_deployments
 from db.register_indexer import register_indexer
 
 events_to_track = [
@@ -22,17 +23,21 @@ events_to_track = [
     "Transfer", 
     "NewTotalAssetsUpdated",
     "RatesUpdated",
-    "Referral"
+    "Referral",
+    "StateUpdated",
+    "Paused",
+    "Unpaused"
 ]
 
 async def run_indexer(
     chain_id: int,
+    lagoon_address: str,
     sleep_time: int,
     range: int,
     real_time: bool,
     run_time: int
 ) -> None:
-    vault_id = register_indexer(chain_id)
+    vault_id = register_indexer(chain_id, lagoon_address)
 
     indexer = LagoonIndexer(
         lagoon_abi=LAGOON_ABI,
@@ -61,6 +66,7 @@ async def run_indexer(
 
 async def launch_forever(
     chain_id: int,
+    lagoon_address: str,
     sleep_time: int,
     range: int,
     real_time: bool,
@@ -68,7 +74,7 @@ async def launch_forever(
 ) -> None:
     while True:
         try:
-            await run_indexer(chain_id, sleep_time, range, real_time, run_time)
+            await run_indexer(chain_id, lagoon_address, sleep_time, range, real_time, run_time)
         except Exception as e:
             print(f"[{chain_id}] Indexer crashed: {e}")
             traceback.print_exc()
@@ -96,6 +102,7 @@ async def main() -> None:
         asyncio.create_task(
             launch_forever(
                 chain_id=chain_id,
+                lagoon_address=get_lagoon_deployments(chain_id)["lagoon_address"],
                 sleep_time=args.sleep_time,
                 range=args.range,
                 real_time=bool(args.real_time),

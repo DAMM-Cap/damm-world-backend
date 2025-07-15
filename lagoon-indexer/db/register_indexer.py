@@ -1,5 +1,4 @@
 from db.db import getEnvDb
-from core.lagoon_deployments import get_lagoon_deployments
 import os
 import sys
 import uuid
@@ -90,9 +89,7 @@ def insert_token(db, chain_id, token_address):
     print(f"{name} token inserted (or already exists).")
     return final_token_id
 
-def insert_vault(db, chain_id):
-    lagoon_address = get_lagoon_deployments(chain_id)["lagoon_address"]
-    
+def insert_vault(db, chain_id, lagoon_address):
     vault_id = str(uuid.uuid4())
     vault_token_id = insert_token(db, chain_id, lagoon_address)
     
@@ -105,12 +102,12 @@ def insert_vault(db, chain_id):
     name = vault_contract.functions.name().call()
     
     strategy_type = 'yield_farming'
-    status = 'active'
+    status = 'open'
     total_assets = 0
     management_rate = 0
     performance_rate = 0
     high_water_mark = 0
-                
+    
     min_deposit = 0 #TODO
     max_deposit = None #TODO
     
@@ -211,10 +208,10 @@ def insert_bot_status(db, vault_id, chain_id):
         conn.commit()
     print(f"Bot status inserted (or already exists).")
 
-def register_indexer(chain_id):
+def register_indexer(chain_id, lagoon_address):
     db = getEnvDb(os.getenv('DB_NAME'))
     insert_chain(db, chain_id)
-    vault_id = insert_vault(db, chain_id)
+    vault_id = insert_vault(db, chain_id, lagoon_address)
     insert_indexer_state(db, vault_id, chain_id)
     insert_bot_status(db, vault_id, chain_id)
     db.closeConnection()

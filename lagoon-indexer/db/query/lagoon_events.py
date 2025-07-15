@@ -64,6 +64,18 @@ class LagoonEvents:
         conn.commit()
 
     @staticmethod
+    def update_vault_status(db: Database, vault_id: str, status: str, update_timestamp: str):
+        query = """
+        UPDATE vaults
+        SET status = %s, updated_at = %s
+        WHERE vault_id = %s;
+        """
+        conn = db.connection
+        with conn.cursor() as cur:
+            cur.execute(query, (status, update_timestamp, vault_id))
+        conn.commit()
+
+    @staticmethod
     def update_settled_redeem_requests(db: Database, vault_id: str, settled_timestamp: str):
         query = """
         UPDATE redeem_requests

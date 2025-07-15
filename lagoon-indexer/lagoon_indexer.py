@@ -179,6 +179,33 @@ class EventFormatter:
         }
         return event_data, referral_data
     
+    @staticmethod
+    def format_StateUpdated_data(event: Dict, vault_id: str) -> Tuple[Dict, Dict]:
+        event_data = EventFormatter._format_Event_data(event, vault_id, 'state_updated')
+        state = event['args']['state']
+        if state == 0:
+            state = 'open'
+        elif state == 1:
+            state = 'closing'
+        elif state == 2:
+            state = 'closed'
+        state_updated_data = {
+            'event_id': event_data['event_id'],
+            'vault_id': event_data['vault_id'],
+            'state': state
+        }
+        return event_data, state_updated_data
+    
+    @staticmethod
+    def format_Paused_data(event: Dict, vault_id: str) -> Dict:
+        event_data = EventFormatter._format_Event_data(event, vault_id, 'paused')
+        return event_data
+    
+    @staticmethod
+    def format_Unpaused_data(event: Dict, vault_id: str) -> Dict:
+        event_data = EventFormatter._format_Event_data(event, vault_id, 'unpaused')
+        return event_data
+    
 # Event Processor
 class EventProcessor:
     def __init__(self, db: Database, lagoon: str, vault_id: str, chain_id: int):
@@ -198,7 +225,10 @@ class EventProcessor:
             'RatesUpdated': 'vaults',
             'Deposit': 'vault_returns',
             'Withdraw': 'vault_returns',
-            'VaultSnapshot': 'vault_snapshots'
+            'VaultSnapshot': 'vault_snapshots',
+            'StateUpdated': 'vaults',
+            'Paused': 'vaults',
+            'Unpaused': 'vaults'
         }
 
     def save_to_db_batch(self, event_name: str, event_data_list: List[Dict]):
@@ -387,11 +417,58 @@ class EventProcessor:
 
         self.save_to_db_batch('events', event_data_list)
 
+    def store_StateUpdated_events(self, events: List[Dict]):
+        event_data_list = []
+        for event in events:
+            event_data, state_updated_data = EventFormatter.format_StateUpdated_data(event, self.vault_id)
+            event_data_list.append(event_data)
+
+            # UPDATE the vault status
+            LagoonEvents.update_vault_status(
+                self.db,
+                self.vault_id,
+                state_updated_data['state'],
+                LagoonDbDateUtils.get_datetime_from_str(event_data['event_timestamp'])
+            )
+
+        self.save_to_db_batch('events', event_data_list)
+
+    def store_Paused_events(self, events: List[Dict]):
+        event_data_list = []
+        for event in events:
+            event_data = EventFormatter.format_Paused_data(event, self.vault_id)
+            event_data_list.append(event_data)
+
+            # UPDATE the vault status
+            LagoonEvents.update_vault_status(
+                self.db,
+                self.vault_id,
+                'paused',
+                LagoonDbDateUtils.get_datetime_from_str(event_data['event_timestamp'])
+            )
+        self.save_to_db_batch('events', event_data_list)
+
+    def store_Unpaused_events(self, events: List[Dict]):
+        event_data_list = []
+        for event in events:
+            event_data = EventFormatter.format_Unpaused_data(event, self.vault_id)
+            event_data_list.append(event_data)
+
+            # UPDATE the vault status
+            LagoonEvents.update_vault_status(
+                self.db,
+                self.vault_id,
+                'open',
+                LagoonDbDateUtils.get_datetime_from_str(event_data['event_timestamp'])
+            )
+        self.save_to_db_batch('events', event_data_list)
+
+
 # Lagoon Indexer
 class LagoonIndexer:
     def __init__(self, lagoon_abi: list, chain_id: int, sleep_time: int, range: int, event_names: list, real_time: bool = True, vault_id: str = None):
         lagoon_deployments = get_lagoon_deployments(chain_id)
-        self.first_lagoon_block = lagoon_deployments['genesis_block_lagoon']
+        self.first_lagoon_block = lagoon_deployments['genesis_block_lagoon']-1 # -1 To process the first block
         self.lagoon = lagoon_deployments['lagoon_address']
         self.vault_id = vault_id
         self.chain_id = chain_id
@@ -488,6 +565,12 @@ class LagoonIndexer:
                     await self.event_processor.store_Deposit_events([event])
                 elif event_name == 'Referral':
                     self.event_processor.store_Referral_events([event])
+                elif event_name == 'StateUpdated':
+                    self.event_processor.store_StateUpdated_events([event])
+                elif event_name == 'Paused':
+                    self.event_processor.store_Paused_events([event])
+                elif event_name == 'Unpaused':
+                    self.event_processor.store_Unpaused_events([event])
             except Exception as e:
                 print(f"Error processing {event['event_name']} event: {e}")
                 traceback.print_exc()

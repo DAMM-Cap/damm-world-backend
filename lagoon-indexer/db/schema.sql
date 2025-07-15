@@ -10,11 +10,11 @@ BEGIN
   CREATE TYPE deposit_request_status AS ENUM ('pending', 'settled', 'canceled', 'completed');
   CREATE TYPE redeem_request_status AS ENUM ('pending', 'settled', 'completed');
   CREATE TYPE transaction_status AS ENUM ('pending','confirmed','failed','reverted');
-  CREATE TYPE vault_status AS ENUM ('active','paused','closed');
+  CREATE TYPE vault_status AS ENUM ('open','paused','closing','closed');
   CREATE TYPE event_type AS ENUM (
     'deposit_request','redeem_request','settle_deposit','settle_redeem',
     'deposit','withdraw','transfer','total_assets_updated','deposit_canceled',
-    'referral','rates_updated'
+    'referral','rates_updated','state_updated','paused','unpaused'
   );
   CREATE TYPE settlement_type AS ENUM ('deposit','redeem');
   CREATE TYPE vault_return_type AS ENUM ('deposit', 'withdraw');

@@ -44,20 +44,20 @@ def run_bot(chain_id, api_url):
         print(f"Bot execution failed: {e}")
         raise
 
-def run_bot_loop(chain_id, api_url, sleep_interval):
+async def run_bot_loop(chain_id, api_url, sleep_interval):
     while True:
         try:
-            print(f"\n--- Bot cycle started at {time.strftime('%Y-%m-%d %H:%M:%S')} ---")
+            print(f"\n--- Bot cycle started for chain {chain_id} at {time.strftime('%Y-%m-%d %H:%M:%S')} ---")
             run_bot(chain_id, api_url)
-            print(f"--- Bot cycle completed, sleeping for {sleep_interval} seconds ---")
-            time.sleep(sleep_interval)
+            print(f"--- Bot cycle completed for chain {chain_id}, sleeping for {sleep_interval} seconds ---")
+            await asyncio.sleep(sleep_interval)
         except KeyboardInterrupt:
-            print("\nBot stopped by user")
+            print(f"\nBot stopped by user on chain {chain_id}")
             break
         except Exception as e:
-            print(f"Bot loop error: {e}")
+            print(f"Bot loop error on chain {chain_id}: {e}")
             print(f"Retrying in {sleep_interval} seconds...")
-            time.sleep(sleep_interval)
+            await asyncio.sleep(sleep_interval)
 
 async def run_parallel_bots(api_url):
     print("Starting keeper bot in infinite loop mode.....")

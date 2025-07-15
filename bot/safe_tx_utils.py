@@ -2,12 +2,14 @@ from core.lagoon_deployments import get_lagoon_deployments
 import subprocess
 from utils.rpc import get_rpc_url
 
-def run_safe_tx(url, *batched_args):
+def run_safe_tx(url, contract, safe_address, *batched_args):
     cmd = [
         "yarn",
         "--cwd", "safe-tx",
         "send",
         "--rpc-url", url,
+        "--lagoon", contract,
+        "--safe", safe_address,
         *batched_args
     ]
     print("Running command:", " ".join(cmd))
@@ -91,7 +93,7 @@ def keeper_txs_handler(chain_id, pending):
 
         if batched_args:
             url = get_rpc_url(chain_id)
-            run_safe_tx(url, *batched_args)
+            run_safe_tx(url, contract, get_lagoon_deployments(chain_id)["safe_address"], *batched_args)
 
         return True
 

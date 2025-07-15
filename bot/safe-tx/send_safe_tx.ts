@@ -51,6 +51,8 @@ function parseBatchedCalls(argv: string[]): {
 async function buildAndSimulateTransaction(
   safeSdk: Safe,
   provider: ethers.providers.JsonRpcProvider,
+  lagoon: string,
+  safe: string,
   batch: ParsedCall[],
   nonce: number
 ): Promise<SafeTransaction> {
@@ -68,8 +70,8 @@ async function buildAndSimulateTransaction(
   console.log("Simulating transaction...");
   const success = await simulateSafeTransaction({
     provider,
-    vaultAddress: process.env.VAULT_ADDRESS!,
-    safeAddress: process.env.SAFE_ADDRESS!,
+    vaultAddress: lagoon,
+    safeAddress: safe,
     safeTx: signedTx,
     signatures: signedTx.encodedSignatures(),
   });
@@ -80,33 +82,54 @@ async function buildAndSimulateTransaction(
   return signedTx;
 }
 
-function parseCliArgs(): { rpcUrl?: string; batchArgs: string[] } {
+function parseCliArgs(): {
+  rpcUrl?: string;
+  lagoon?: string;
+  safe?: string;
+  batchArgs: string[];
+} {
   const fullArgs = process.argv.slice(2);
   const batchArgs: string[] = [];
   let rpcUrl: string | undefined;
+  let lagoon: string | undefined;
+  let safe: string | undefined;
 
   for (let i = 0; i < fullArgs.length; i++) {
     if (fullArgs[i] === "--rpc-url" && i + 1 < fullArgs.length) {
       rpcUrl = fullArgs[i + 1];
+      i++; // skip value
+    } else if (fullArgs[i] === "--lagoon" && i + 1 < fullArgs.length) {
+      lagoon = fullArgs[i + 1];
+      i++; // skip value
+    } else if (fullArgs[i] === "--safe" && i + 1 < fullArgs.length) {
+      safe = fullArgs[i + 1];
       i++; // skip value
     } else {
       batchArgs.push(fullArgs[i]);
     }
   }
 
-  return { rpcUrl, batchArgs };
+  return { rpcUrl, lagoon, safe, batchArgs };
 }
 
 async function main() {
   console.log("Script started");
 
-  const { rpcUrl, batchArgs } = parseCliArgs();
+  const { rpcUrl, lagoon, safe, batchArgs } = parseCliArgs();
   const finalRpcUrl = rpcUrl || process.env.RPC_URL;
 
   if (!finalRpcUrl) {
     throw new Error(
       "RPC URL must be provided via --rpc-url or RPC_URL env var"
     );
+  }
+
+  if (!lagoon) {
+    throw new Error("Lagoon address must be provided via --lagoon");
+  }
+
+  if (!safe) {
+    throw new Error("Safe address must be provided via --safe");
   }
 
   if (batchArgs.length < 3) {
@@ -129,18 +152,16 @@ async function main() {
   console.log(`Network: ${network.name} (Chain ID: ${network.chainId})`);
 
   // Check if the Safe address is actually a contract
-  const code = await provider.getCode(process.env.SAFE_ADDRESS!);
+  const code = await provider.getCode(safe);
   if (code === "0x") {
-    throw new Error(
-      `No contract found at address ${process.env.SAFE_ADDRESS!}`
-    );
+    throw new Error(`No contract found at address ${safe}`);
   }
-  console.log(`Contract found at Safe address ${process.env.SAFE_ADDRESS!}`);
+  console.log(`Contract found at Safe address ${safe}`);
 
   // Try to create Safe SDK with minimal configuration
   const safeSdk = await Safe.create({
     ethAdapter,
-    safeAddress: process.env.SAFE_ADDRESS!,
+    safeAddress: safe,
   });
 
   const parsedCalls = parseBatchedCalls(batchArgs);
@@ -154,6 +175,8 @@ async function main() {
     let signedTx = await buildAndSimulateTransaction(
       safeSdk,
       provider,
+      lagoon,
+      safe,
       batch,
       onChainNonce
     );
@@ -204,6 +227,8 @@ async function main() {
           signedTx = await buildAndSimulateTransaction(
             safeSdk,
             provider,
+            lagoon,
+            safe,
             batch,
             onChainNonce
           );
@@ -211,11 +236,7 @@ async function main() {
       }
  */
       // Update keeper status
-      await updateKeeperStatus(
-        network.chainId.toString(),
-        process.env.VAULT_ADDRESS!,
-        provider
-      );
+      await updateKeeperStatus(network.chainId.toString(), lagoon, provider);
     } else {
       console.log("Just simulated; skipping execution.");
     }

@@ -15,58 +15,52 @@ def execute_sql_file(file_path: str) -> bool:
         db.connection.rollback()
         return False
 
-def truncate_event_tables():
-    """
-    Truncate Lagoon event tables (empty data but keep structure).
-    """
-    lagoon_tables = [
-        "user_positions",
-        "vault_returns",
-        "transfers",
-        "settlements",
-        "redeem_requests",
-        "deposit_requests",
-        "vault_snapshots",
-        "events",
-        "vaults",
-        "tokens",
-        "indexer_state",
-        "bot_status",
-        "users",
-        "chains"
-    ]
-    with db.connection as conn:
-        with conn.cursor() as cur:
-            for table in lagoon_tables:
-                cur.execute(f"TRUNCATE TABLE {table} CASCADE;")
-                print(f"Truncated table: {table}")
-        conn.commit()
+def drop_all_schema_objects():
+    print("Dropping all Lagoon tables and custom types...")
 
-def drop_enum_types():
+    drop_sql = """
+    -- Drop tables
+    DROP TABLE IF EXISTS 
+        user_positions,
+        vault_returns,
+        transfers,
+        settlements,
+        redeem_requests,
+        deposit_requests,
+        vault_snapshots,
+        events,
+        vaults,
+        tokens,
+        users,
+        chains,
+        indexer_state,
+        bot_status
+    CASCADE;
+
+    -- Drop enum types
+    DROP TYPE IF EXISTS deposit_request_status CASCADE;
+    DROP TYPE IF EXISTS redeem_request_status CASCADE;
+    DROP TYPE IF EXISTS transaction_status CASCADE;
+    DROP TYPE IF EXISTS vault_status CASCADE;
+    DROP TYPE IF EXISTS event_type CASCADE;
+    DROP TYPE IF EXISTS settlement_type CASCADE;
+    DROP TYPE IF EXISTS vault_return_type CASCADE;
+    DROP TYPE IF EXISTS operation_type CASCADE;
+    DROP TYPE IF EXISTS network_type CASCADE;
+    DROP TYPE IF EXISTS strategy_type CASCADE;
+
+    -- Drop custom domains
+    DROP DOMAIN IF EXISTS bps_type CASCADE;
     """
-    Drop custom enum types before recreating schema to accept updates.
-    """
-    enum_types = [
-        "deposit_request_status",
-        "redeem_request_status",
-        "transaction_status",
-        "vault_status",
-        "event_type",
-        "settlement_type",
-        "vault_return_type",
-        "operation_type",
-        "network_type",
-        "strategy_type"
-    ]
+
     with db.connection.cursor() as cur:
-        for enum_type in enum_types:
-            print(f"Dropping enum type: {enum_type}")
-            cur.execute(f"DROP TYPE IF EXISTS {enum_type} CASCADE;")
+        cur.execute(drop_sql)
     db.connection.commit()
+    print("Dropped all tables, types, and domains.")
 
 if __name__ == "__main__":
-    db = getEnvDb(os.getenv('DB_NAME'))
-    drop_enum_types()
+    db = getEnvDb(os.getenv("DB_NAME"))
+    drop_all_schema_objects()
     if execute_sql_file("db/schema.sql"):
-        truncate_event_tables()
+        print("✅ Schema recreated successfully.")
     db.closeConnection()

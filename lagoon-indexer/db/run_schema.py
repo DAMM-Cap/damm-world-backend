@@ -42,8 +42,31 @@ def truncate_event_tables():
                 print(f"Truncated table: {table}")
         conn.commit()
 
+def drop_enum_types():
+    """
+    Drop custom enum types before recreating schema to accept updates.
+    """
+    enum_types = [
+        "deposit_request_status",
+        "redeem_request_status",
+        "transaction_status",
+        "vault_status",
+        "event_type",
+        "settlement_type",
+        "vault_return_type",
+        "operation_type",
+        "network_type",
+        "strategy_type"
+    ]
+    with db.connection.cursor() as cur:
+        for enum_type in enum_types:
+            print(f"Dropping enum type: {enum_type}")
+            cur.execute(f"DROP TYPE IF EXISTS {enum_type} CASCADE;")
+    db.connection.commit()
+
 if __name__ == "__main__":
     db = getEnvDb(os.getenv('DB_NAME'))
+    drop_enum_types()
     if execute_sql_file("db/schema.sql"):
         truncate_event_tables()
     db.closeConnection()

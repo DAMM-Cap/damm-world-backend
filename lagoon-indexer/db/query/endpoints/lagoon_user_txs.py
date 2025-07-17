@@ -1,6 +1,6 @@
 from db.db import getEnvDb
 from typing import Dict, Any
-from core.lagoon_deployments import get_lagoon_deployments
+from core.lagoon_deployments import get_lagoon_deployments_by_vault_address
 from .pagination_utils import PaginationUtils
 import os
 
@@ -61,12 +61,12 @@ def get_data_query(table: str, owner_join_column: bool = False, offset: int = 0,
             LIMIT {limit}
         """
 
-def get_user_txs(address: str, offset: int, limit: int, chain_id: int = 480) -> Dict[str, Any]:
+def get_user_txs(address: str, offset: int, limit: int, chain_id: int, vault_address: str) -> Dict[str, Any]:
     db = getEnvDb(os.getenv('DB_NAME'))
     lowercase_address = address.lower()
     contract_addresses = [
-        get_lagoon_deployments(chain_id)['lagoon_address'].lower(),
-        get_lagoon_deployments(chain_id)['silo'].lower()
+        vault_address,
+        get_lagoon_deployments_by_vault_address(chain_id, vault_address)['silo'].lower()
     ]
 
     # Configure tables for pagination

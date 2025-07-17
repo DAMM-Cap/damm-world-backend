@@ -1,5 +1,5 @@
 from db.db import getEnvDb
-from typing import Dict, Any, List
+from typing import Dict, Any
 import os
 
 def get_keepers_pending_txs_metadata(chain_id: int = 480) -> Dict[str, Any]:
@@ -15,9 +15,10 @@ def get_keepers_pending_txs_metadata(chain_id: int = 480) -> Dict[str, Any]:
     db = getEnvDb(os.getenv('DB_NAME'))
     
     vaults_query = """
-        SELECT v.vault_id, v.price_oracle_address, v.safe_address, t.address as underlying_token_address
+        SELECT v.vault_id, v.price_oracle_address, v.safe_address, dt.address as underlying_token_address, vt.address as vault_address
         FROM vaults v
-        JOIN tokens t ON t.token_id = v.deposit_token_id
+        JOIN tokens dt ON dt.token_id = v.deposit_token_id
+        JOIN tokens vt ON vt.token_id = v.vault_token_id
         WHERE v.chain_id = %s
     """
     
@@ -89,36 +90,53 @@ def get_keepers_pending_txs_metadata(chain_id: int = 480) -> Dict[str, Any]:
     for row in vaults_df.itertuples(index=False):
         vault_id = row.vault_id
 
+        vault = {
+            "vault_id": vault_id,
+            "vault_address": row.vault_address,
+            "safe": row.safe_address,
+            "valuationManager": row.price_oracle_address,
+            "underlying_token_address": row.underlying_token_address,
+        }
+
         indexer_state_df = db.frameResponse(indexer_state_query, (vault_id, chain_id))
         if indexer_state_df.empty:
-            return {
+            vaults_txs.append({
                 "status": "error",
-                "message": "Indexer state not found"
-            }
+                "message": "Indexer state not found",
+                "vault": vault,
+                "vault_txs": {}
+            })
+            continue
+
         bot_status_df = db.frameResponse(bot_status_query, (vault_id, chain_id))
         if bot_status_df.empty:
-            return {
+            vaults_txs.append({
                 "status": "error",
-                "message": "Bot status not found"
-            }
+                "message": "Bot status not found",
+                "vault": vault,
+                "vault_txs": {}
+            })
+            continue
+        
         indexer_is_syncing = indexer_state_df.iloc[0].is_syncing
         if indexer_is_syncing:
-            return {
+            vaults_txs.append({
                 "status": "syncing",
                 "message": "Indexer is currently syncing blockchain data. Bot operations are paused until synchronization completes.",
-                "vault_txs": []
-            }
+                "vault": vault,
+                "vault_txs": {}
+            })
+            continue
+        
         bot_in_sync = bot_status_df.iloc[0].in_sync
         if not bot_in_sync:
-            return {
+            vaults_txs.append({
                 "status": "syncing",
                 "message": "Bot is not in sync with the indexer. Bot operations are paused until synchronization completes.",
-                "vault_txs": []
-            }
-        
-        price_oracle_address = row.price_oracle_address
-        safe_address = row.safe_address
-        underlying_token_address = row.underlying_token_address
+                "vault": vault,
+                "vault_txs": {}
+            })
+            continue
         
         initial_update_df = db.frameResponse(initial_update_query, (chain_id, vault_id))
         deposit_df = db.frameResponse(deposit_query, (chain_id, vault_id))
@@ -128,27 +146,26 @@ def get_keepers_pending_txs_metadata(chain_id: int = 480) -> Dict[str, Any]:
         if deposit_df.empty and redeem_df.empty and settled_deposit_df.empty:
             continue
         vault_txs = {
-            "vault_id": vault_id,
             "initialUpdate": initial_update_df.empty,
             "pendingDeposit": not deposit_df.empty,
             "pendingRedeem": not redeem_df.empty,
             "settledDeposit": [],
-            "valuationManager": price_oracle_address,
-            "safe": safe_address,
-            "underlying_token_address": underlying_token_address
         }
         # Add settled deposit owner addresses
         if not settled_deposit_df.empty:
             vault_txs["settledDeposit"] = settled_deposit_df['owner'].tolist()
         
-        vaults_txs.append(vault_txs)
+        vaults_txs.append({
+            "status": "ok",
+            "message": "Vault is in sync",
+            "vault": vault,
+            "vault_txs": vault_txs
+        })
         
     # Build response structure
     result = {
-        "status": "ok",
         "vaults_txs": vaults_txs
     }
-    
-    
+
     return result
 

@@ -1,6 +1,5 @@
 from db.db import getEnvDb
 from typing import Dict, Any
-from core.lagoon_deployments import get_lagoon_deployments
 from .pagination_utils import PaginationUtils
 import os
 

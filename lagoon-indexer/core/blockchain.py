@@ -6,16 +6,17 @@ from constants.abi.lagoon import LAGOON_ABI
 from constants.abi.weth9 import WETH9_ABI
 from constants.abi.optimismMintableERC20 import WLD_ABI
 from constants.abi.safe import SAFE_ABI
-from constants.addresses import DAMM_WORLD_ADDRESSES
+from .lagoon_deployments import get_lagoon_deployments
 from utils.rpc import get_rpc_url
 
 class Blockchain:
-    def __init__(self, rpc_url, chain_id, is_PoA=False):
+    def __init__(self, rpc_url, chain_id, index, is_PoA=False):
         provider = Web3.HTTPProvider(rpc_url)
         self.node = Web3(provider)
         if is_PoA:
             self.node.middleware_onion.inject(geth_poa_middleware, layer=0)
         self.chain_id = chain_id
+        self.index = index
 
     def getBlockTimestamp(self, block_num: int) -> int:
         block = self.node.eth.get_block(block_num)
@@ -58,43 +59,51 @@ class Blockchain:
         decode_return = self.node.codec.decode(abi_types, output_data[1])
         return decode_return[0] if len(decode_return) == 1 else decode_return
 
+    def get_logs(self, from_block: int, to_block: int, event_topic: bytes):
+        return self.node.eth.get_logs({
+            "fromBlock": from_block,
+            "toBlock": to_block,
+            "address": get_lagoon_deployments(self.chain_id, self.index)['lagoon_address'],
+            "topics": [event_topic]
+        })
+    
     def get_erc20_contract(self, address: str):
         return self.node.eth.contract(address=Web3.to_checksum_address(address), abi=ERC20_ABI)
     
     def get_lagoon_contract(self):
         return self.node.eth.contract(
-            address=Web3.to_checksum_address(DAMM_WORLD_ADDRESSES[self.chain_id]['lagoon']),
+            address=get_lagoon_deployments(self.chain_id, self.index)['lagoon_address'],
             abi=LAGOON_ABI
         )
     
     def get_wrapped_native_weth_contract(self):
         return self.node.eth.contract(
-            address=Web3.to_checksum_address(DAMM_WORLD_ADDRESSES[self.chain_id]['wrapped_native_weth_token']),
+            address=get_lagoon_deployments(self.chain_id, self.index)['wrapped_native_weth_token'],
             abi=WETH9_ABI
         )
     
     def get_wld_contract(self):
         return self.node.eth.contract(
-            address=Web3.to_checksum_address(DAMM_WORLD_ADDRESSES[self.chain_id]['wld_token']),
+            address=get_lagoon_deployments(self.chain_id, self.index)['wld_token'],
             abi=WLD_ABI
         )
     
     def get_safe_contract(self):
         return self.node.eth.contract(
-            address=Web3.to_checksum_address(DAMM_WORLD_ADDRESSES[self.chain_id]['safe']),
+            address=get_lagoon_deployments(self.chain_id, self.index)['safe_address'],
             abi=SAFE_ABI
         )
 
-def getEnvNode(chain_id: int) -> Blockchain:
+def getEnvNode(chain_id: int, index: int) -> Blockchain:
     if chain_id == 480:
-        return Blockchain(get_rpc_url(480), 480)
+        return Blockchain(get_rpc_url(480), 480, index)
     elif chain_id == 31337:
-        return Blockchain(get_rpc_url(31337), 31337)
+        return Blockchain(get_rpc_url(31337), 31337, index)
     elif chain_id == 8453:
-        return Blockchain(get_rpc_url(8453), 8453)
+        return Blockchain(get_rpc_url(8453), 8453, index)
     elif chain_id == 1:
-        return Blockchain(get_rpc_url(1), 1)
+        return Blockchain(get_rpc_url(1), 1, index)
     elif chain_id == 11155111:
-        return Blockchain(get_rpc_url(11155111), 11155111)
+        return Blockchain(get_rpc_url(11155111), 11155111, index)
     else:
         raise Exception('RPC unavailable for that chain_id')

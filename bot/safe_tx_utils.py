@@ -1,4 +1,3 @@
-from core.lagoon_deployments import get_lagoon_deployments
 import subprocess
 from utils.rpc import get_rpc_url
 
@@ -32,8 +31,17 @@ def keeper_txs_handler(chain_id, pending):
         pending: Pending transactions metadata
     
     Metadata format example:
-    {
-        "vaults_txs": [
+    [{
+        "status": "ok",
+        "message": "Vault is in sync",
+        "vault": {
+            "vault_id": "0x123",
+            "vault_address": "0x123",
+            "safe": "0x123",
+            "valuationManager": "0x123",
+            "underlying_token_address": "0x123",
+        },
+        "txs": [
             {
                 "type": "updateNewTotalAssets",
                 "assets": realTotalAssets,
@@ -57,43 +65,64 @@ def keeper_txs_handler(chain_id, pending):
             },
             {
                 "type": "approve",
-                "contract": token_contract,
+                "assets": realTotalAssets,
                 "caller": safeAddress,
                 "vault_id": vault_id
             }
         ]
-    }
+    }]
     """
     try:
-        batched_args = []
+        for instance in pending:
+            # Handle different response statuses
+            if instance["status"] == "syncing":
+                print(f"[{instance['vault']['vault_address']}]", instance["message"], "Indexer is syncing")
+                return
+            if instance["status"] == "error":
+                raise Exception(f"[{instance['vault']['vault_address']}]", instance["message"], "Unknown error")
+            if instance["status"] == "ok":
+                # Check if there are any transactions
+                instance_txs = instance["txs"]
+                if len(instance_txs) == 0:
+                    print(f"[{instance['vault']['vault_address']}]", "No pending transactions found")
+                    return
 
-        for req in pending['vaults_txs']:
-            method = req["type"]
-            contract = get_lagoon_deployments(chain_id)["lagoon_address"]
+                print(f"[{instance['vault']['vault_address']}]", f"Found {len(instance_txs)} pending transactions to trigger")
+            
+                batched_args = []
 
-            if method == "updateNewTotalAssets":
-                assets = str(req["assets"])
-                batched_args.extend([method, contract, assets])
+                for req in instance_txs:
+                    method = req["type"]
+                    contract = instance["vault"]["vault_address"]
 
-            elif method == "settleDeposit":
-                assets = str(req["assets"])
-                batched_args.extend([method, contract, assets])
+                    if method == "updateNewTotalAssets":
+                        assets = str(req["assets"])
+                        batched_args.extend([method, contract, assets])
 
-            elif method == "claimSharesOnBehalf":
-                controllers = req["controllers"]
-                batched_args.extend([method, contract, *controllers])
+                    elif method == "settleDeposit":
+                        assets = str(req["assets"])
+                        batched_args.extend([method, contract, assets])
 
-            elif method == "approve":
-                token_contract = req["contract"]
-                assets = str(req["assets"])
-                batched_args.extend([method, token_contract, *[contract, assets]])
+                    elif method == "claimSharesOnBehalf":
+                        controllers = req["controllers"]
+                        batched_args.extend([method, contract, *controllers])
+
+                    elif method == "approve":
+                        token_contract = instance["vault"]["underlying_token_address"]
+                        assets = str(req["assets"])
+                        batched_args.extend([method, token_contract, *[contract, assets]])
+
+                    else:
+                        raise ValueError(f"Unknown request type: {method}")
+
+                if batched_args:
+                    url = get_rpc_url(chain_id)
+                    run_safe_tx(url, contract, instance["vault"]["safe"], *batched_args)
 
             else:
-                raise ValueError(f"Unknown request type: {method}")
-
-        if batched_args:
-            url = get_rpc_url(chain_id)
-            run_safe_tx(url, contract, get_lagoon_deployments(chain_id)["safe_address"], *batched_args)
+                # Fallback for unexpected response format
+                print(f"[{instance['vault']['vault_address']}]", f"Unexpected response format: {instance}")
+                return
 
         return True
 

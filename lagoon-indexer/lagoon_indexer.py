@@ -466,29 +466,25 @@ class EventProcessor:
 
 # Lagoon Indexer
 class LagoonIndexer:
-    def __init__(self, lagoon_abi: list, chain_id: int, sleep_time: int, range: int, event_names: list, real_time: bool = True, vault_id: str = None):
-        lagoon_deployments = get_lagoon_deployments(chain_id)
-        self.first_lagoon_block = lagoon_deployments['genesis_block_lagoon']-1 # -1 To process the first block
-        self.lagoon = lagoon_deployments['lagoon_address']
+    def __init__(self, chain_id: int, index: int, sleep_time: int, range: int, event_names: list, real_time: bool = True, vault_id: str = None):
+        self.first_lagoon_block = get_lagoon_deployments(chain_id, index)['genesis_block_lagoon']-1 # -1 To process the first block
+        self.lagoon = get_lagoon_deployments(chain_id, index)["lagoon_address"]
         self.vault_id = vault_id
         self.chain_id = chain_id
+        self.index = index
         self.sleep_time = sleep_time
         self.range = range
         self.real_time = real_time
         self.event_names = event_names
 
-        self.blockchain = getEnvNode(chain_id)
-        self.lagoon_contract = self.blockchain.node.eth.contract(
-            address=self.lagoon,
-            abi=lagoon_abi
-        )
+        self.blockchain = getEnvNode(chain_id, index)
+        self.lagoon_contract = self.blockchain.get_lagoon_contract()
         self.db = getEnvDb(os.getenv('DB_NAME'))
         self.event_processor = EventProcessor(self.db, self.lagoon, self.vault_id, self.chain_id)
 
     def get_block_ts(self, event: Dict) -> str:
         block_number = int(event['blockNumber'])
-        block = self.blockchain.node.eth.get_block(block_number)
-        ts = datetime.fromtimestamp(block['timestamp'])
+        ts = datetime.fromtimestamp(self.blockchain.getBlockTimestamp(block_number))
         return LagoonDbDateUtils.format_timestamp(ts)
 
     def get_latest_block_number(self) -> int:
@@ -500,12 +496,7 @@ class LagoonIndexer:
         """
         event_obj = self.lagoon_contract.events[event_name]
         event_topic = event_abi_to_log_topic(event_obj().abi)
-        logs = self.blockchain.node.eth.get_logs({
-            "fromBlock": from_block,
-            "toBlock": to_block,
-            "address": self.lagoon,
-            "topics": [event_topic]
-        })
+        logs = self.blockchain.get_logs(from_block, to_block, event_topic)
         return [event_obj().process_log(log) for log in logs]
 
 
@@ -534,7 +525,7 @@ class LagoonIndexer:
                 print(f"Error fetching {event_name} events: {e}")
                 traceback.print_exc()
                 time.sleep(5)
-                self.blockchain = getEnvNode(self.chain_id)
+                self.blockchain = getEnvNode(self.chain_id, self.index)
 
         # 2) Sort all events by blockNumber and logIndex
         all_events.sort(key=lambda e: (int(e['blockNumber']), int(e['logIndex'])))
@@ -575,7 +566,7 @@ class LagoonIndexer:
                 print(f"Error processing {event['event_name']} event: {e}")
                 traceback.print_exc()
                 time.sleep(5)
-                self.blockchain = getEnvNode(self.chain_id)
+                self.blockchain = getEnvNode(self.chain_id, self.index)
 
     async def fetcher_loop(self):
         """
@@ -594,7 +585,7 @@ class LagoonIndexer:
                 return 1
             
             # Get indexer status
-            block_gap, percentage_behind = get_indexer_status(last_processed_block, latest_block, self.chain_id)
+            block_gap, percentage_behind = get_indexer_status(last_processed_block, latest_block, self.first_lagoon_block)
             print(f"Indexer is {percentage_behind}% towards completion of syncing.")
             print(f"Block gap: {block_gap}")
 

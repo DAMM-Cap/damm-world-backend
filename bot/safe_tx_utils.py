@@ -74,58 +74,58 @@ def keeper_txs_handler(chain_id, pending):
     """
     try:
         for instance in pending:
-            # Handle different response statuses
-            if instance["status"] == "syncing":
-                print(f"[{instance['vault']['vault_address']}]", instance["message"], "Indexer is syncing")
-                return
-            if instance["status"] == "error":
-                raise Exception(f"[{instance['vault']['vault_address']}]", instance["message"], "Unknown error")
-            if instance["status"] == "ok":
-                # Check if there are any transactions
-                instance_txs = instance["txs"]
-                if len(instance_txs) == 0:
-                    print(f"[{instance['vault']['vault_address']}]", "No pending transactions found")
-                    return
+            vault_address = instance["vault"]["vault_address"]
+            status = instance["status"]
+            message = instance.get("message", "")
 
-                print(f"[{instance['vault']['vault_address']}]", f"Found {len(instance_txs)} pending transactions to trigger")
-            
-                batched_args = []
+            if status == "syncing":
+                print(f"[{vault_address}] Indexer syncing: {message}")
+                continue
 
-                for req in instance_txs:
-                    method = req["type"]
-                    contract = instance["vault"]["vault_address"]
+            if status == "error":
+                raise Exception(f"[{vault_address}] Keeper error: {message}")
 
-                    if method == "updateNewTotalAssets":
-                        assets = str(req["assets"])
-                        batched_args.extend([method, contract, assets])
+            if status != "ok":
+                print(f"[{vault_address}] Unexpected status: {status} - {message}")
+                continue
 
-                    elif method == "settleDeposit":
-                        assets = str(req["assets"])
-                        batched_args.extend([method, contract, assets])
+            instance_txs = instance.get("txs", [])
+            if not instance_txs:
+                print(f"[{vault_address}] No pending transactions found")
+                continue
 
-                    elif method == "claimSharesOnBehalf":
-                        controllers = req["controllers"]
-                        batched_args.extend([method, contract, *controllers])
+            print(f"[{vault_address}] Found {len(instance_txs)} pending transactions")
 
-                    elif method == "approve":
-                        token_contract = instance["vault"]["underlying_token_address"]
-                        assets = str(req["assets"])
-                        batched_args.extend([method, token_contract, *[contract, assets]])
+            batched_args = []
 
-                    else:
-                        raise ValueError(f"Unknown request type: {method}")
+            for req in instance_txs:
+                method = req["type"]
+                contract = vault_address
 
-                if batched_args:
-                    url = get_rpc_url(chain_id)
-                    run_safe_tx(url, contract, instance["vault"]["safe"], *batched_args)
+                if method == "updateNewTotalAssets":
+                    batched_args.extend([method, contract, str(req["assets"])])
 
-            else:
-                # Fallback for unexpected response format
-                print(f"[{instance['vault']['vault_address']}]", f"Unexpected response format: {instance}")
-                return
+                elif method == "settleDeposit":
+                    batched_args.extend([method, contract, str(req["assets"])])
+
+                elif method == "claimSharesOnBehalf":
+                    batched_args.extend([method, contract, *req["controllers"]])
+
+                elif method == "approve":
+                    token_contract = instance["vault"]["underlying_token_address"]
+                    batched_args.extend([
+                        method, token_contract, contract, str(req["assets"])
+                    ])
+
+                else:
+                    raise ValueError(f"[{vault_address}] Unknown request type: {method}")
+
+            if batched_args:
+                url = get_rpc_url(chain_id)
+                run_safe_tx(url, contract, instance["vault"]["safe"], *batched_args)
 
         return True
 
     except Exception as e:
-        print(f"Failed to process requests: {e}")
+        print(f"[{chain_id}] Failed to process keeper requests: {e}")
         raise

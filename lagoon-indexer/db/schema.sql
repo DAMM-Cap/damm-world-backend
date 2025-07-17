@@ -238,6 +238,8 @@ CREATE INDEX IF NOT EXISTS idx_user_positions_vault_user ON user_positions(vault
 CREATE INDEX IF NOT EXISTS idx_vault_snapshots_vault_id ON vault_snapshots(vault_id);
 CREATE INDEX IF NOT EXISTS idx_vaults_id ON vaults(vault_id);
 CREATE INDEX IF NOT EXISTS idx_settlements_type_epoch ON settlements(settlement_type, epoch_id);
+CREATE INDEX IF NOT EXISTS idx_vaults_vault_token_id ON vaults(vault_token_id);
+CREATE INDEX IF NOT EXISTS idx_tokens_address_chain_id ON tokens(address, chain_id);
 
 -- Triggers: update updated_at
 /* CREATE OR REPLACE FUNCTION update_updated_at_column() RETURNS TRIGGER AS $$

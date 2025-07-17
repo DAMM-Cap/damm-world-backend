@@ -56,7 +56,7 @@ def get_lagoon_deployments_by_vault_address(chain_id: int, vault_address: str):
         raise ValueError(f"Chain ID {chain_id} not supported")
     deploymentsArray = deployments[chain_id]
     for deployment in deploymentsArray:
-        if deployment["lagoon_address"] == vault_address:
+        if deployment["lagoon_address"].lower() == vault_address.lower():
             return deployment
     raise ValueError(f"Vault address {vault_address} not found for chain ID {chain_id}")
 

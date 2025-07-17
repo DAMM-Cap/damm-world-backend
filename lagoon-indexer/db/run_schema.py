@@ -1,5 +1,16 @@
 from db import getEnvDb
 import os
+from insert_factory_data import insert_factory_data
+
+def initialize_factory_data():
+    factories = os.getenv("FACTORIES").split(",")
+    print("Initializing factory data...")
+    
+    for factory_str in factories:
+        tx_hash, chain_id = factory_str.split(":")
+        insert_factory_data(tx_hash, int(chain_id))
+
+    print("Factory data initialized successfully.")
 
 def execute_sql_file(file_path: str) -> bool:
     try:
@@ -34,7 +45,8 @@ def drop_all_schema_objects():
         users,
         chains,
         indexer_state,
-        bot_status
+        bot_status,
+        factory,
     CASCADE;
 
     -- Drop enum types
@@ -62,5 +74,6 @@ if __name__ == "__main__":
     db = getEnvDb(os.getenv("DB_NAME"))
     drop_all_schema_objects()
     if execute_sql_file("db/schema.sql"):
-        print("✅ Schema recreated successfully.")
+        print("Schema recreated successfully.")
+    initialize_factory_data()
     db.closeConnection()

@@ -63,6 +63,17 @@ CREATE TABLE IF NOT EXISTS tokens (
   UNIQUE(chain_id, address)
 );
 
+-- Factory
+CREATE TABLE IF NOT EXISTS factory (
+  creation_tx_hash VARCHAR(66) PRIMARY KEY,
+  chain_id INTEGER NOT NULL,
+  genesis_block_number BIGINT NOT NULL,
+  vault_address VARCHAR(42) NOT NULL,
+  silo_address VARCHAR(42) NOT NULL,
+  created_at TIMESTAMP,
+  UNIQUE(chain_id, vault_address)
+);
+
 -- Vaults
 CREATE TABLE IF NOT EXISTS vaults (
   vault_id UUID PRIMARY KEY,

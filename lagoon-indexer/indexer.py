@@ -8,8 +8,9 @@ import asyncio
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from lagoon_indexer import LagoonIndexer
-from core.lagoon_deployments import get_lagoon_deployments, get_count_lagoon_deployments_by_chain_id
 from db.register_indexer import register_indexer
+from db.query.lagoon_db_utils import LagoonDbUtils
+from db.db import getEnvDb
 
 events_to_track = [
     "DepositRequest", 
@@ -30,17 +31,21 @@ events_to_track = [
 
 async def run_indexer(
     chain_id: int,
-    lagoon_index: int,
+    lagoon_address: str,
+    silo_address: str,
+    genesis_block_number: int,
     sleep_time: int,
     range: int,
     real_time: bool,
     run_time: int
 ) -> None:
-    vault_id = register_indexer(chain_id, get_lagoon_deployments(chain_id, lagoon_index)["lagoon_address"])
+    vault_id = register_indexer(chain_id, lagoon_address)
 
     indexer = LagoonIndexer(
         chain_id=chain_id,
-        index=lagoon_index,
+        lagoon_address=lagoon_address,
+        silo_address=silo_address,
+        genesis_block_number=genesis_block_number,
         sleep_time=sleep_time,
         range=range,
         event_names=events_to_track,
@@ -63,22 +68,59 @@ async def run_indexer(
 
     print(f"[{chain_id}] Indexer exited after {time.time() - start_time:.2f}s.")
 
+def make_completion_handler(chain_id: int, vault: str):
+    def handler(t):
+        exc = t.exception()
+        if exc:
+            print(f"[{chain_id}] Indexer task for {vault} raised an exception: {exc}")
+        else:
+            print(f"[{chain_id}] Indexer task for {vault} completed successfully")
+    return handler
+
 async def launch_forever(
     chain_id: int,
-    lagoon_index: int,
     sleep_time: int,
     range: int,
     real_time: bool,
     run_time: int
 ) -> None:
+    print(f"[{chain_id}] Launching indexer loop...")
+    active_vaults = set()  # Tracks vaults already being indexed
+
     while True:
         try:
-            await run_indexer(chain_id, lagoon_index, sleep_time, range, real_time, run_time)
+            db = getEnvDb(os.getenv('DB_NAME'))
+            deployments = LagoonDbUtils.get_deployments_from_chain_id(db, chain_id)
+
+            for deployment in deployments:
+                vault = deployment["vault_address"]
+
+                if vault not in active_vaults:
+                    print(f"[{chain_id}] Launching indexer for {vault}")
+                    active_vaults.add(vault)
+
+                    # Launch indexer as background task
+                    task = asyncio.create_task(
+                        run_indexer(
+                            chain_id,
+                            vault,
+                            deployment["silo_address"],
+                            deployment["genesis_block_number"],
+                            sleep_time,
+                            range,
+                            real_time,
+                            run_time
+                        )
+                    )
+                    
+                    task.add_done_callback(make_completion_handler(chain_id, vault))
+
         except Exception as e:
-            print(f"[{chain_id}] Indexer crashed: {e}")
+            print(f"[{chain_id}] Indexer launcher crashed: {e}")
             traceback.print_exc()
+
         print(f"[{chain_id}] Restarting in 5 seconds...\n")
-        await asyncio.sleep(5)
+        await asyncio.sleep(5)  # Wait before checking for new deployments again
 
 async def main() -> None:
     load_dotenv()
@@ -101,7 +143,6 @@ async def main() -> None:
         asyncio.create_task(
             launch_forever(
                 chain_id=chain_id,
-                lagoon_index=lagoon_index,
                 sleep_time=args.sleep_time,
                 range=args.range,
                 real_time=bool(args.real_time),
@@ -109,7 +150,6 @@ async def main() -> None:
             )
         )
         for chain_id in chain_ids
-        for lagoon_index in range(get_count_lagoon_deployments_by_chain_id(chain_id))
     ]
 
     await asyncio.gather(*tasks)

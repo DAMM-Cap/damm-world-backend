@@ -197,6 +197,17 @@ class LagoonDbUtils:
                 return None
         else:
             return None
+    
+    @staticmethod
+    def get_deployments_from_chain_id(db: Database, chain_id: int) -> Tuple[str, str, int]:
+        """
+        Get the deployments for a given chain_id.
+        """
+        query = """
+        SELECT vault_address, silo_address, genesis_block_number FROM factory WHERE chain_id = %s
+        """
+        result = db.queryResponse(query, (chain_id,))
+        return result
 
     @staticmethod
     def handle_vault_snapshot(db: Database, vault_id: str, total_assets: Decimal, total_shares: Decimal, share_price: Decimal, current_event_ts: datetime) -> Tuple[Optional[Decimal], Optional[Decimal], Optional[Decimal], Optional[Decimal]]:

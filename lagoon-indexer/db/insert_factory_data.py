@@ -126,18 +126,3 @@ def insert_factory_data(creation_tx_hash: str, chain_id: int):
     db.connection.commit()
     print("Factory data inserted successfully.")
     db.closeConnection()
-
-
-""" if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print("Usage: python your_script.py <tx_hash> <chain_id>")
-        sys.exit(1)
-
-    tx_hash = sys.argv[1]
-    chain_id = int(sys.argv[2])
-
-    contracts = get_internal_contracts(tx_hash, chain_id)
-    print("Internal contracts created:")
-    for addr in contracts:
-        print(f"- {addr}")
- """

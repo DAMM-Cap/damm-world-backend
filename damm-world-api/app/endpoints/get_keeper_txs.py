@@ -41,26 +41,8 @@ def get_keeper_txs(chain_id: int = 480):
                 }
             }
         ]
-    }    
-    
-    result = {
-        "vaults_txs": [
-            {
-                "vault_id": "0x123",
-                "vault_address": "0x123",
-                "initialUpdate": True,
-                "pendingDeposit": True,
-                "pendingRedeem": True,
-                "settledDeposit": [
-                    "0x0000000000000000000000000000000000000000", 
-                    "0x0000000000000000000000000000000000000000"
-                ],
-                "valuationManager": "0x123",
-                "underlying_token_address": "0x123",
-                "safe": "0x123"
-            }
-        ]
-    } """
+    }
+    """
 
     if len(result["vaults_txs"]) == 0:
         return result
@@ -86,8 +68,6 @@ def get_keeper_txs(chain_id: int = 480):
             instance_txs.append({
                 "type": "updateNewTotalAssets",
                 "assets": realTotalAssets,
-                #"caller": vault_txs["valuationManager"],
-                #"vault_id": vault_txs["vault_id"]
             })
             txs.append({
                 "status": status,
@@ -101,8 +81,6 @@ def get_keeper_txs(chain_id: int = 480):
             instance_txs.append({
                 "type": "updateNewTotalAssets",
                 "assets": realTotalAssets,
-                #"caller": vault_txs["valuationManager"],
-                #"vault_id": vault_txs["vault_id"]
             })
             if instance["vault_txs"]["pendingRedeem"] == True:
                 # The underlying_token address must approve the Vault to handle the required 
@@ -111,22 +89,16 @@ def get_keeper_txs(chain_id: int = 480):
                 instance_txs.append({
                     "type": "approve",
                     "assets": realTotalAssets,
-                    #"caller": vault_txs["safe"],
-                    #"vault_id": vault_txs["vault_id"]
                 })
             # Lagoon's deposit settlement includes settle redeem.
             instance_txs.append({
                 "type": "settleDeposit",
                 "assets": realTotalAssets,
-                #"caller": vault_txs["safe"],
-                #"vault_id": vault_txs["vault_id"]
             })
         if len(instance["vault_txs"]["settledDeposit"]) > 0:
             instance_txs.append({
                 "type": "claimSharesOnBehalf",
                 "controllers": instance["vault_txs"]["settledDeposit"],
-                #"caller": vault_txs["safe"],
-                #"vault_id": vault_txs["vault_id"]
             })
         txs.append({
             "status": status,

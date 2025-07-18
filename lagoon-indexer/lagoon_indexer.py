@@ -9,7 +9,6 @@ import uuid
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from db.db import Database, getEnvDb
 from core.blockchain import getEnvNode
-from core.lagoon_deployments import get_lagoon_deployments
 from db.query.lagoon_db_utils import LagoonDbUtils
 from db.query.lagoon_events import LagoonEvents
 from db.utils.lagoon_db_date_utils import LagoonDbDateUtils
@@ -466,19 +465,20 @@ class EventProcessor:
 
 # Lagoon Indexer
 class LagoonIndexer:
-    def __init__(self, chain_id: int, index: int, sleep_time: int, range: int, event_names: list, real_time: bool = True, vault_id: str = None):
-        self.first_lagoon_block = get_lagoon_deployments(chain_id, index)['genesis_block_lagoon']-1 # -1 To process the first block
-        self.lagoon = get_lagoon_deployments(chain_id, index)["lagoon_address"]
+    def __init__(self, chain_id: int, lagoon_address: str, silo_address: str, genesis_block_number: int, sleep_time: int, range: int, event_names: list, real_time: bool = True, vault_id: str = None):
+        self.first_lagoon_block = genesis_block_number-1 # -1 To process the first block
+        self.lagoon = lagoon_address
+        self.silo = silo_address
         self.vault_id = vault_id
         self.chain_id = chain_id
-        self.index = index
+        
         self.sleep_time = sleep_time
         self.range = range
         self.real_time = real_time
         self.event_names = event_names
 
-        self.blockchain = getEnvNode(chain_id, index)
-        self.lagoon_contract = self.blockchain.get_lagoon_contract()
+        self.blockchain = getEnvNode(chain_id)
+        self.lagoon_contract = self.blockchain.get_lagoon_contract(lagoon_address)
         self.db = getEnvDb(os.getenv('DB_NAME'))
         self.event_processor = EventProcessor(self.db, self.lagoon, self.vault_id, self.chain_id)
 
@@ -496,7 +496,7 @@ class LagoonIndexer:
         """
         event_obj = self.lagoon_contract.events[event_name]
         event_topic = event_abi_to_log_topic(event_obj().abi)
-        logs = self.blockchain.get_logs(from_block, to_block, event_topic)
+        logs = self.blockchain.get_logs(from_block, to_block, self.lagoon, event_topic)
         return [event_obj().process_log(log) for log in logs]
 
 
@@ -525,7 +525,7 @@ class LagoonIndexer:
                 print(f"Error fetching {event_name} events: {e}")
                 traceback.print_exc()
                 time.sleep(5)
-                self.blockchain = getEnvNode(self.chain_id, self.index)
+                self.blockchain = getEnvNode(self.chain_id)
 
         # 2) Sort all events by blockNumber and logIndex
         all_events.sort(key=lambda e: (int(e['blockNumber']), int(e['logIndex'])))
@@ -566,7 +566,7 @@ class LagoonIndexer:
                 print(f"Error processing {event['event_name']} event: {e}")
                 traceback.print_exc()
                 time.sleep(5)
-                self.blockchain = getEnvNode(self.chain_id, self.index)
+                self.blockchain = getEnvNode(self.chain_id)
 
     async def fetcher_loop(self):
         """
@@ -574,7 +574,7 @@ class LagoonIndexer:
         Returns 1 if up to date.
         """
         try:
-            last_processed_block = LagoonDbUtils.get_last_processed_block(self.db, self.vault_id, self.chain_id, self.first_lagoon_block)
+            last_processed_block = LagoonDbUtils.get_last_processed_block(self.db, self.vault_id, self.first_lagoon_block)
             print(f"Last processed block: {last_processed_block}")
 
             latest_block = self.get_latest_block_number()
@@ -597,13 +597,13 @@ class LagoonIndexer:
             await self.fetch_and_store(from_block, range_to_process)
             new_last_processed_block = from_block + range_to_process
             is_syncing = not is_up_to_date(new_last_processed_block, latest_block)
-            LagoonDbUtils.update_last_processed_block(self.db, self.vault_id, self.chain_id, new_last_processed_block, is_syncing)
+            LagoonDbUtils.update_last_processed_block(self.db, self.vault_id, new_last_processed_block, is_syncing)
             print(f"Updated last processed block to {new_last_processed_block} in DB.")
 
-            bot_last_processed_block = LagoonDbUtils.get_bot_last_processed_block(self.db, self.vault_id, self.chain_id, self.first_lagoon_block)
+            bot_last_processed_block = LagoonDbUtils.get_bot_last_processed_block(self.db, self.vault_id, self.first_lagoon_block)
             print(f"Bot last processed block: {bot_last_processed_block}")
             if (bot_last_processed_block <= new_last_processed_block):
-                LagoonDbUtils.update_bot_in_sync(self.db, self.vault_id, self.chain_id)
+                LagoonDbUtils.update_bot_in_sync(self.db, self.vault_id)
                 print(f"Updated bot status to in sync in DB.")
             else:
                 print(f"Indexer is {bot_last_processed_block - new_last_processed_block} blocks away towards bot syncing.")

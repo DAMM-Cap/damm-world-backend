@@ -50,7 +50,7 @@ def update_keeper_status(
             }
 
         # 3) Update bot_status table
-        LagoonDbUtils.update_bot_status(db, vault_id, chain_id, last_processed_block, last_processed_timestamp)
+        LagoonDbUtils.update_bot_status(db, vault_id, last_processed_block, last_processed_timestamp)
 
         return {
             "success": True,

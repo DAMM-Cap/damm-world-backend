@@ -65,13 +65,12 @@ CREATE TABLE IF NOT EXISTS tokens (
 
 -- Factory
 CREATE TABLE IF NOT EXISTS factory (
-  creation_tx_hash VARCHAR(66) PRIMARY KEY,
   chain_id INTEGER NOT NULL,
   genesis_block_number BIGINT NOT NULL,
   vault_address VARCHAR(42) NOT NULL,
   silo_address VARCHAR(42) NOT NULL,
   created_at TIMESTAMP,
-  UNIQUE(chain_id, vault_address)
+  PRIMARY KEY(chain_id, vault_address)
 );
 
 -- Vaults
@@ -207,26 +206,22 @@ CREATE TABLE IF NOT EXISTS user_positions (
 
 -- Indexer State
 CREATE TABLE IF NOT EXISTS indexer_state (
-  vault_id UUID NOT NULL REFERENCES vaults(vault_id) ON DELETE CASCADE,
-  chain_id INTEGER NOT NULL REFERENCES chains(chain_id),
+  vault_id UUID PRIMARY KEY REFERENCES vaults(vault_id) ON DELETE CASCADE,
   last_processed_block BIGINT,
   last_processed_timestamp TIMESTAMP,
   indexer_version VARCHAR(20),
   is_syncing BOOLEAN,
   sync_started_at TIMESTAMP,
-  updated_at TIMESTAMP,
-  PRIMARY KEY (vault_id, chain_id)
+  updated_at TIMESTAMP
 );
 
 -- Bot Status
 CREATE TABLE IF NOT EXISTS bot_status (
-  vault_id UUID NOT NULL REFERENCES vaults(vault_id) ON DELETE CASCADE,
-  chain_id INTEGER NOT NULL REFERENCES chains(chain_id),
+  vault_id UUID PRIMARY KEY REFERENCES vaults(vault_id) ON DELETE CASCADE,
   last_processed_block BIGINT,
   last_processed_timestamp TIMESTAMP,
   in_sync BOOLEAN,
-  updated_at TIMESTAMP,
-  PRIMARY KEY (vault_id, chain_id)
+  updated_at TIMESTAMP
 );
 
 -- Indexes
@@ -238,10 +233,10 @@ CREATE INDEX IF NOT EXISTS idx_redeem_requests_user_status ON redeem_requests(us
 CREATE INDEX IF NOT EXISTS idx_redeem_requests_vault_status ON redeem_requests(vault_id, status);
 CREATE INDEX IF NOT EXISTS idx_transfers_from_to ON transfers(from_address, to_address);
 CREATE INDEX IF NOT EXISTS idx_user_positions_user ON user_positions(user_id);
-CREATE INDEX IF NOT EXISTS idx_indexer_vault_chain ON indexer_state(vault_id, chain_id);
+CREATE INDEX IF NOT EXISTS idx_indexer_vault ON indexer_state(vault_id);
 CREATE INDEX IF NOT EXISTS idx_indexer_is_syncing ON indexer_state(is_syncing);
 CREATE INDEX IF NOT EXISTS idx_indexer_last_processed_time ON indexer_state(last_processed_timestamp DESC);
-CREATE INDEX IF NOT EXISTS idx_bot_status_vault_chain ON bot_status(vault_id, chain_id);
+CREATE INDEX IF NOT EXISTS idx_bot_status_vault ON bot_status(vault_id);
 CREATE INDEX IF NOT EXISTS idx_bot_status_in_sync ON bot_status(in_sync);
 CREATE INDEX IF NOT EXISTS idx_bot_status_last_processed_time ON bot_status(last_processed_timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_events_txhash ON events(transaction_hash);
@@ -251,21 +246,4 @@ CREATE INDEX IF NOT EXISTS idx_vaults_id ON vaults(vault_id);
 CREATE INDEX IF NOT EXISTS idx_settlements_type_epoch ON settlements(settlement_type, epoch_id);
 CREATE INDEX IF NOT EXISTS idx_vaults_vault_token_id ON vaults(vault_token_id);
 CREATE INDEX IF NOT EXISTS idx_tokens_address_chain_id ON tokens(address, chain_id);
-
--- Triggers: update updated_at
-/* CREATE OR REPLACE FUNCTION update_updated_at_column() RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = CURRENT_TIMESTAMP;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_chains_updated_at BEFORE UPDATE ON chains FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_vaults_updated_at BEFORE UPDATE ON vaults FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_deposit_requests_updated_at BEFORE UPDATE ON deposit_requests FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_redeem_requests_updated_at BEFORE UPDATE ON redeem_requests FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_user_positions_updated_at BEFORE UPDATE ON user_positions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_indexer_state_updated_at BEFORE UPDATE ON indexer_state FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_bot_status_updated_at BEFORE UPDATE ON bot_status FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
- */
+CREATE INDEX IF NOT EXISTS idx_factory_vault_address_chain_id ON factory(vault_address, chain_id);

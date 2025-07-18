@@ -113,17 +113,16 @@ def insert_factory_data(creation_tx_hash: str, chain_id: int):
     with db.connection.cursor() as cursor:
         query = """
         INSERT INTO factory (
-            creation_tx_hash,
             chain_id,
             genesis_block_number,
             vault_address,
             silo_address,
             created_at
         ) 
-        VALUES (%s, %s, %s, %s, %s, %s)
-        ON CONFLICT (creation_tx_hash) DO NOTHING;
+        VALUES (%s, %s, %s, %s, %s)
+        ON CONFLICT (vault_address, chain_id) DO NOTHING;
         """
-        cursor.execute(query, (creation_tx_hash, chain_id, genesis_block_number, vault_address, silo_address, now_ts))
+        cursor.execute(query, (chain_id, genesis_block_number, vault_address, silo_address, now_ts))
     db.connection.commit()
     print("Factory data inserted successfully.")
     db.closeConnection()

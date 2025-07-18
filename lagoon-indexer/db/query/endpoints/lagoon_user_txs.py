@@ -1,8 +1,8 @@
 from db.db import getEnvDb
 from typing import Dict, Any
-from core.lagoon_deployments import get_lagoon_deployments_by_vault_address
 from .pagination_utils import PaginationUtils
 import os
+from db.query.lagoon_db_utils import LagoonDbUtils
 
 
 def get_data_query(table: str, owner_join_column: bool = False, offset: int = 0, limit: int = 20) -> str:
@@ -64,9 +64,10 @@ def get_data_query(table: str, owner_join_column: bool = False, offset: int = 0,
 def get_user_txs(address: str, offset: int, limit: int, chain_id: int, vault_address: str) -> Dict[str, Any]:
     db = getEnvDb(os.getenv('DB_NAME'))
     lowercase_address = address.lower()
+    silo_address = LagoonDbUtils.get_silo_from_factory(db, vault_address, chain_id)
     contract_addresses = [
         vault_address,
-        get_lagoon_deployments_by_vault_address(chain_id, vault_address)['silo'].lower()
+        silo_address
     ]
 
     # Configure tables for pagination

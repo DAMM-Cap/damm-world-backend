@@ -574,7 +574,7 @@ class LagoonIndexer:
         Returns 1 if up to date.
         """
         try:
-            last_processed_block = LagoonDbUtils.get_last_processed_block(self.db, self.vault_id, self.chain_id, self.first_lagoon_block)
+            last_processed_block = LagoonDbUtils.get_last_processed_block(self.db, self.vault_id, self.first_lagoon_block)
             print(f"Last processed block: {last_processed_block}")
 
             latest_block = self.get_latest_block_number()
@@ -597,13 +597,13 @@ class LagoonIndexer:
             await self.fetch_and_store(from_block, range_to_process)
             new_last_processed_block = from_block + range_to_process
             is_syncing = not is_up_to_date(new_last_processed_block, latest_block)
-            LagoonDbUtils.update_last_processed_block(self.db, self.vault_id, self.chain_id, new_last_processed_block, is_syncing)
+            LagoonDbUtils.update_last_processed_block(self.db, self.vault_id, new_last_processed_block, is_syncing)
             print(f"Updated last processed block to {new_last_processed_block} in DB.")
 
-            bot_last_processed_block = LagoonDbUtils.get_bot_last_processed_block(self.db, self.vault_id, self.chain_id, self.first_lagoon_block)
+            bot_last_processed_block = LagoonDbUtils.get_bot_last_processed_block(self.db, self.vault_id, self.first_lagoon_block)
             print(f"Bot last processed block: {bot_last_processed_block}")
             if (bot_last_processed_block <= new_last_processed_block):
-                LagoonDbUtils.update_bot_in_sync(self.db, self.vault_id, self.chain_id)
+                LagoonDbUtils.update_bot_in_sync(self.db, self.vault_id)
                 print(f"Updated bot status to in sync in DB.")
             else:
                 print(f"Indexer is {bot_last_processed_block - new_last_processed_block} blocks away towards bot syncing.")

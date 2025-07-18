@@ -4,56 +4,62 @@ This directory contains the PostgreSQL schema for the **Lagoon Indexer**, a back
 
 ## 📦 Schema Overview
 
-The schema captures all key lifecycle events and performance metrics related to Lagoon vaults, including deposits, redemptions, transfers, fees, and APY tracking.
+The schema captures all key lifecycle events and performance metrics related to Lagoon vaults, including deposits, redemptions, transfers, fees, APY tracking, and real-time indexing metadata.
 
 ### 🧩 Core Tables
 
-- **`users`**: Registered user addresses per chain
-- **`chains`**: Supported networks and metadata
-- **`tokens`**: Token metadata per chain
-- **`vaults`**: Configuration and live state of each vault, including:
-  - `total_assets`
-  - `management_rate`, `performance_rate` (in BPS)
-  - `high_water_mark` (max historical share price)
-  - deposit constraints and administrator addresses
+- **`chains`**: Supported blockchain networks with metadata such as name, type (`mainnet`, `testnet`, `local`), and explorer URLs.
+- **`users`**: Registered user addresses per chain.
+- **`tokens`**: ERC-20 or wrapped native token metadata per chain.
+- **`factory`**: Tracks initial vault and silo deployments per chain. Used for bootstrapping new indexers.
+- **`vaults`**: Configuration and state of each vault, including:
+  - Token associations
+  - Fee configurations (`management_rate`, `performance_rate`)
+  - High-water marks and APY details
+  - Deposit limits and administrator contract addresses
 
 ### 🔁 Event & Transaction Tables
 
-- **`events`**: Canonical source of all on-chain event data. Event types include:
-  - `deposit_request`
-  - `redeem_request`
-  - `settle_deposit`
-  - `settle_redeem`
-  - `deposit`
-  - `withdraw`
-  - `transfer`
-  - `total_assets_updated`
-  - `rates_updated`
-  - `referral`
-  - `deposit_canceled`
-- **`deposit_requests`**: Records deposit intents and status
-- **`redeem_requests`**: Records redemption intents and status
-- **`settlements`**: Tracks epoch-based deposit/redeem settlements
-- **`vault_returns`**: Records actual deposits and withdrawals
-- **`transfers`**: Logs share or asset transfers between users
+- **`events`**: Canonical source of all indexed on-chain events. Event types include:
+  - `deposit_request`, `redeem_request`
+  - `settle_deposit`, `settle_redeem`
+  - `deposit`, `withdraw`, `transfer`
+  - `total_assets_updated`, `rates_updated`, `referral`
+  - `state_updated`, `paused`, `unpaused`, `deposit_canceled`
+- **`deposit_requests`**: User-initiated deposit intents with status tracking (`pending`, `settled`, `canceled`, `completed`).
+- **`redeem_requests`**: User-initiated redemption intents with similar status tracking.
+- **`settlements`**: Epoch-based matching of deposits and redemptions into vault operations.
+- **`vault_returns`**: Records actual deposits and withdrawals by users, including asset and share amounts.
+- **`transfers`**: Logs movement of shares or tokens between user addresses.
 
 ### 📈 State Tracking Tables
 
-- **`vault_snapshots`**: Periodic metrics for vaults including:
-  - `share_price`
-  - `management_fee` and `performance_fee`
-  - `apy` and `delta_hours` (time window of APY calc)
-- **`user_positions`**: Tracks user shares, asset value, and activity
-- **`indexer_state`**: Keeps track of indexer progress per vault/chain
+- **`vault_snapshots`**: Tracks periodic updates to total assets, share price, APY, and associated fees.
+- **`user_positions`**: Maintains user-level balances and cumulative activity (deposited, withdrawn, current asset value).
+- **`indexer_state`**: Tracks indexer progress on a per-vault basis, including last processed block, timestamps, and syncing status.
+- **`bot_status`**: Tracks the status of off-chain bots that perform automated operations per vault.
 
-## ⚙️ Features
+### 🗃️ Data Integrity and Optimization
 
-- ✅ Uses UUIDs for consistent record identity
-- ✅ Rich enum types for transaction and status classification
-- ✅ BPS-based fee modeling (`bps_type`)
-- ✅ Auto-updated `updated_at` columns via PostgreSQL triggers
-- ✅ Foreign key constraints for data integrity
-- ✅ Full indexing for efficient event and state queries
+- ✅ Uses UUIDs for consistent identity across events, users, and vaults
+- ✅ Rich enum types for classification of request, transaction, and strategy types
+- ✅ BPS-based domain (`bps_type`) to model fees safely
+- ✅ Foreign key constraints for relational integrity
+- ✅ Conditional constraints for deposit limits and positive values
+- ✅ Indexed fields on all high-frequency access paths
+
+### 🧪 Enum Types
+
+- `vault_status`: `open`, `paused`, `closing`, `closed`
+- `deposit_request_status`: `pending`, `settled`, `canceled`, `completed`
+- `redeem_request_status`: `pending`, `settled`, `completed`
+- `transaction_status`: `pending`, `confirmed`, `failed`, `reverted`
+- `event_type`: Captures all supported on-chain event kinds
+- `settlement_type`: `deposit`, `redeem`
+- `vault_return_type`: `deposit`, `withdraw`
+- `operation_type`: `INSERT`, `UPDATE`, `DELETE`
+- `network_type`: `mainnet`, `testnet`, `local`
+- `strategy_type`: `yield_farming`, `staking`, `lending`, `custom`
 
 ## 📐 Schema Diagram
 
@@ -64,8 +70,19 @@ The schema captures all key lifecycle events and performance metrics related to 
 The schema is defined in `schema.sql` and includes:
 
 - `CREATE TYPE` definitions for enum-based modeling of states
-- `CREATE DOMAIN` for BPS validation (0–10000)
-- Referential constraints to ensure consistency across tables
-- `vault_snapshots` designed to compute and store APY, fees, and share price dynamics
-- Triggers for consistent `updated_at` tracking
-- Indexed fields on all frequent query columns
+- `CREATE DOMAIN` definitions for safe BPS handling
+- Referential integrity via `FOREIGN KEY` constraints
+- `CHECK` constraints for data validity (e.g. non-negative balances, valid limits)
+- `ON DELETE CASCADE` for relevant foreign keys (e.g. `events`)
+- Strategic indexes to support high-performance queries for:
+  - User positions
+  - Vault snapshots
+  - Event histories
+  - Sync and bot status tables
+
+## 🧰 Used In
+
+- `run_schema.py`: Initializes the schema and inserts chain/token metadata
+- `insert_factory_data.py`: Derives factory deployments from on-chain creation txs
+- `lagoon_indexer.py`: Real-time vault indexer triggered per vault deployment
+- `keeper bots`: Off-chain automation agents that consume sync state

@@ -34,7 +34,7 @@ class LagoonDbUtils:
                 raise Exception(f"Failed to create user for address {address} on chain {chain_id}. Insert returned: {result}")
             
     @staticmethod
-    def get_last_processed_block(db: Database, vault_id: str, chain_id: int, default_block: int) -> int:
+    def get_last_processed_block(db: Database, vault_id: str, default_block: int) -> int:
         """
         Retrieve the last processed block for a given vault_id.
         If no record exists, return the default_block.
@@ -42,9 +42,9 @@ class LagoonDbUtils:
         query = """
         SELECT COALESCE(last_processed_block, %s) AS last_block
         FROM indexer_state
-        WHERE vault_id = %s AND chain_id = %s
+        WHERE vault_id = %s
         """
-        result = db.queryResponse(query, (default_block, vault_id, chain_id))
+        result = db.queryResponse(query, (default_block, vault_id))
 
         if result and 'last_block' in result[0]:
             return int(result[0]['last_block'])
@@ -52,7 +52,7 @@ class LagoonDbUtils:
             return default_block
 
     @staticmethod
-    def get_bot_last_processed_block(db: Database, vault_id: str, chain_id: int, default_block: int) -> int:
+    def get_bot_last_processed_block(db: Database, vault_id: str, default_block: int) -> int:
         """
         Retrieve the last processed block recorded by the bot for a given vault_id.
         If no record exists in bot_status, return the default_block.
@@ -60,9 +60,9 @@ class LagoonDbUtils:
         query = """
         SELECT COALESCE(last_processed_block, %s) AS last_block
         FROM bot_status
-        WHERE vault_id = %s AND chain_id = %s
+        WHERE vault_id = %s
         """
-        result = db.queryResponse(query, (default_block, vault_id, chain_id))
+        result = db.queryResponse(query, (default_block, vault_id))
 
         if result and 'last_block' in result[0]:
             return int(result[0]['last_block'])
@@ -70,7 +70,21 @@ class LagoonDbUtils:
             return default_block
 
     @staticmethod
-    def update_last_processed_block(db: Database, vault_id: str, chain_id: int, last_block: int, is_syncing: bool):
+    def get_silo_from_factory(db: Database, vault_address: str, chain_id: int) -> str:
+        query = """
+            SELECT silo_address
+            FROM factory
+            WHERE vault_address = %s
+            AND chain_id = %s
+            LIMIT 1
+        """
+        df = db.frameResponse(query, (vault_address, chain_id))
+        if df.empty:
+            raise ValueError(f"Silo not found for vault {vault_address} on chain {chain_id}")
+        return df.iloc[0]["silo_address"].lower()
+
+    @staticmethod
+    def update_last_processed_block(db: Database, vault_id: str, last_block: int, is_syncing: bool):
         """
         Update the last processed block for a given vault_id.
         """
@@ -81,13 +95,13 @@ class LagoonDbUtils:
             last_processed_timestamp = %s,
             updated_at = %s,
             is_syncing = %s
-        WHERE vault_id = %s AND chain_id = %s
+        WHERE vault_id = %s
         """
         formatted_ts = LagoonDbDateUtils.get_datetime_formatted_now()
-        db.execute(query, (last_block, formatted_ts, formatted_ts, is_syncing, vault_id, chain_id))
+        db.execute(query, (last_block, formatted_ts, formatted_ts, is_syncing, vault_id))
 
     @staticmethod
-    def update_bot_status(db: Database, vault_id: str, chain_id: int, last_processed_block: int, last_processed_timestamp: str):
+    def update_bot_status(db: Database, vault_id: str, last_processed_block: int, last_processed_timestamp: str):
         """
         Update the bot status for a given vault_id.
         """
@@ -98,13 +112,13 @@ class LagoonDbUtils:
                 last_processed_timestamp = %s,
                 in_sync = %s,
                 updated_at = %s
-            WHERE vault_id = %s AND chain_id = %s
+            WHERE vault_id = %s
         """
         now_ts = LagoonDbDateUtils.get_datetime_formatted_now()
-        db.execute(query, (last_processed_block, last_processed_timestamp, False, now_ts, vault_id, chain_id))
+        db.execute(query, (last_processed_block, last_processed_timestamp, False, now_ts, vault_id))
     
     @staticmethod
-    def update_bot_in_sync(db: Database, vault_id: str, chain_id: int):
+    def update_bot_in_sync(db: Database, vault_id: str):
         """
         Update the bot status to in sync when the indexer catches up.
         """
@@ -113,10 +127,10 @@ class LagoonDbUtils:
             SET
                 in_sync = %s,
                 updated_at = %s
-            WHERE vault_id = %s AND chain_id = %s
+            WHERE vault_id = %s
         """
         now_ts = LagoonDbDateUtils.get_datetime_formatted_now()
-        db.execute(query, (True, now_ts, vault_id, chain_id))
+        db.execute(query, (True, now_ts, vault_id))
 
     @staticmethod
     def get_delta_hours_and_apy_12h_ago(db: Database, vault_id: str, current_share_price: Decimal, current_event_ts: datetime) -> Tuple[Optional[Decimal], Optional[Decimal], Optional[Decimal]]:

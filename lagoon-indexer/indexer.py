@@ -85,35 +85,30 @@ async def launch_forever(
     run_time: int
 ) -> None:
     print(f"[{chain_id}] Launching indexer loop...")
-    active_vaults = set()  # Tracks vaults already being indexed
-
     while True:
         try:
             db = getEnvDb(os.getenv('DB_NAME'))
             deployments = LagoonDbUtils.get_deployments_from_chain_id(db, chain_id)
 
             for deployment in deployments:
-                vault = deployment["vault_address"]
-
-                if vault not in active_vaults:
-                    print(f"[{chain_id}] Launching indexer for {vault}")
-                    active_vaults.add(vault)
-
-                    # Launch indexer as background task
-                    task = asyncio.create_task(
-                        run_indexer(
-                            chain_id,
-                            vault,
-                            deployment["silo_address"],
-                            deployment["genesis_block_number"],
-                            sleep_time,
-                            range,
-                            real_time,
-                            run_time
-                        )
+                vault = deployment["vault_address"]            
+                print(f"[{chain_id}] Launching indexer for {vault}")
+            
+                # Launch indexer as background task
+                task = asyncio.create_task(
+                    run_indexer(
+                        chain_id,
+                        vault,
+                        deployment["silo_address"],
+                        deployment["genesis_block_number"],
+                        sleep_time,
+                        range,
+                        real_time,
+                        run_time
                     )
-                    
-                    task.add_done_callback(make_completion_handler(chain_id, vault))
+                )
+                
+                task.add_done_callback(make_completion_handler(chain_id, vault))
 
         except Exception as e:
             print(f"[{chain_id}] Indexer launcher crashed: {e}")

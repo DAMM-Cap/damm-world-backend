@@ -71,7 +71,6 @@ def get_keepers_pending_txs_metadata(chain_id: int = 480) -> Dict[str, Any]:
         SELECT is_syncing
         FROM indexer_state
         WHERE vault_id = %s
-        AND chain_id = %s
         LIMIT 1
     """
 
@@ -79,7 +78,6 @@ def get_keepers_pending_txs_metadata(chain_id: int = 480) -> Dict[str, Any]:
         SELECT in_sync
         FROM bot_status
         WHERE vault_id = %s
-        AND chain_id = %s
         LIMIT 1
     """
 
@@ -98,7 +96,7 @@ def get_keepers_pending_txs_metadata(chain_id: int = 480) -> Dict[str, Any]:
             "underlying_token_address": row.underlying_token_address,
         }
 
-        indexer_state_df = db.frameResponse(indexer_state_query, (vault_id, chain_id))
+        indexer_state_df = db.frameResponse(indexer_state_query, (vault_id,))
         if indexer_state_df.empty:
             vaults_txs.append({
                 "status": "error",
@@ -108,7 +106,7 @@ def get_keepers_pending_txs_metadata(chain_id: int = 480) -> Dict[str, Any]:
             })
             continue
 
-        bot_status_df = db.frameResponse(bot_status_query, (vault_id, chain_id))
+        bot_status_df = db.frameResponse(bot_status_query, (vault_id,))
         if bot_status_df.empty:
             vaults_txs.append({
                 "status": "error",

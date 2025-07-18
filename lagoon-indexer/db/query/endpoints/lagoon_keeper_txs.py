@@ -19,7 +19,9 @@ def get_keepers_pending_txs_metadata(chain_id: int = 480) -> Dict[str, Any]:
         FROM vaults v
         JOIN tokens dt ON dt.token_id = v.deposit_token_id
         JOIN tokens vt ON vt.token_id = v.vault_token_id
+        JOIN factory f ON f.vault_address = vt.address AND f.chain_id = v.chain_id
         WHERE v.chain_id = %s
+        AND f.continue_indexing = TRUE
     """
     
     # Check if the mandatory initial updateNewTotalAssets was done

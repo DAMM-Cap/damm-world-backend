@@ -76,6 +76,18 @@ class LagoonEvents:
         conn.commit()
 
     @staticmethod
+    def update_vault_continue_indexing(db: Database, vault_address: str, chain_id: int, continue_indexing: bool):
+        query = """
+        UPDATE factory
+        SET continue_indexing = %s
+        WHERE vault_address = %s AND chain_id = %s;
+        """
+        conn = db.connection
+        with conn.cursor() as cur:
+            cur.execute(query, (continue_indexing, vault_address, chain_id))
+        conn.commit()
+
+    @staticmethod
     def update_settled_redeem_requests(db: Database, vault_id: str, settled_timestamp: str):
         query = """
         UPDATE redeem_requests

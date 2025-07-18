@@ -213,12 +213,12 @@ class LagoonDbUtils:
             return None
     
     @staticmethod
-    def get_deployments_from_chain_id(db: Database, chain_id: int) -> Tuple[str, str, int]:
+    def get_active_deployments_from_chain_id(db: Database, chain_id: int) -> Tuple[str, str, int]:
         """
         Get the deployments for a given chain_id.
         """
         query = """
-        SELECT vault_address, silo_address, genesis_block_number FROM factory WHERE chain_id = %s
+        SELECT vault_address, silo_address, genesis_block_number FROM factory WHERE chain_id = %s AND continue_indexing = TRUE
         """
         result = db.queryResponse(query, (chain_id,))
         return result

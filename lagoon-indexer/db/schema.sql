@@ -69,6 +69,7 @@ CREATE TABLE IF NOT EXISTS factory (
   genesis_block_number BIGINT NOT NULL,
   vault_address VARCHAR(42) NOT NULL,
   silo_address VARCHAR(42) NOT NULL,
+  continue_indexing BOOLEAN NOT NULL,
   created_at TIMESTAMP,
   PRIMARY KEY(chain_id, vault_address)
 );

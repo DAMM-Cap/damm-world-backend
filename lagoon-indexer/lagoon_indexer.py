@@ -430,6 +430,16 @@ class EventProcessor:
                 LagoonDbDateUtils.get_datetime_from_str(event_data['event_timestamp'])
             )
 
+            if state_updated_data['state'] == 'closed':
+                # UPDATE the corresponding vault on factory table's continue_indexing to False
+                # This will stop the indexer from keeping indexing this vault (stopping the corresponding bot as well)
+                LagoonEvents.update_vault_continue_indexing(
+                    self.db,
+                    self.lagoon,
+                    self.chain_id,
+                    False
+                )
+
         self.save_to_db_batch('events', event_data_list)
 
     def store_Paused_events(self, events: List[Dict]):

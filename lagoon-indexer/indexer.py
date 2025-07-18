@@ -88,7 +88,7 @@ async def launch_forever(
     while True:
         try:
             db = getEnvDb(os.getenv('DB_NAME'))
-            deployments = LagoonDbUtils.get_deployments_from_chain_id(db, chain_id)
+            deployments = LagoonDbUtils.get_active_deployments_from_chain_id(db, chain_id)
 
             for deployment in deployments:
                 vault = deployment["vault_address"]            

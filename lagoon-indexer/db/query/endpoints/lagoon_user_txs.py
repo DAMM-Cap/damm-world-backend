@@ -66,8 +66,8 @@ def get_user_txs(address: str, offset: int, limit: int, chain_id: int, vault_add
     lowercase_address = address.lower()
     silo_address = LagoonDbUtils.get_silo_from_factory(db, vault_address, chain_id)
     contract_addresses = [
-        vault_address,
-        silo_address
+        vault_address.lower(),
+        silo_address.lower()
     ]
 
     # Configure tables for pagination

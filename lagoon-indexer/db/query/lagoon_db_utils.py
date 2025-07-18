@@ -81,7 +81,7 @@ class LagoonDbUtils:
         df = db.frameResponse(query, (vault_address, chain_id))
         if df.empty:
             raise ValueError(f"Silo not found for vault {vault_address} on chain {chain_id}")
-        return df.iloc[0]["silo_address"].lower()
+        return df.iloc[0]["silo_address"]
 
     @staticmethod
     def update_last_processed_block(db: Database, vault_id: str, last_block: int, is_syncing: bool):

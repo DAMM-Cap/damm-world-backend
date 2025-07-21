@@ -45,14 +45,10 @@ def keeper_txs_handler(chain_id, pending):
             {
                 "type": "updateNewTotalAssets",
                 "assets": realTotalAssets,
-                "caller": valuationManagerAddress,
-                "vault_id": vault_id
             },
             {
                 "type": "settleDeposit",
                 "assets": realTotalAssets,
-                "caller": safeAddress,
-                "vault_id": vault_id
             },
             {
                 "type": "claimSharesOnBehalf",
@@ -60,14 +56,10 @@ def keeper_txs_handler(chain_id, pending):
                     "0x0000000000000000000000000000000000000000",
                     "0x0000000000000000000000000000000000000000"
                 ],
-                "caller": safeAddress,
-                "vault_id": vault_id
             },
             {
                 "type": "approve",
                 "assets": realTotalAssets,
-                "caller": safeAddress,
-                "vault_id": vault_id
             }
         ]
     }]

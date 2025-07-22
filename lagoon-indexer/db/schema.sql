@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS chains (
 -- Users
 CREATE TABLE IF NOT EXISTS users (
   user_id UUID PRIMARY KEY,
-  address VARCHAR(42) UNIQUE NOT NULL,
+  address VARCHAR(42) NOT NULL,
   chain_id INTEGER NOT NULL REFERENCES chains(chain_id),
   created_at TIMESTAMP,
   updated_at TIMESTAMP,

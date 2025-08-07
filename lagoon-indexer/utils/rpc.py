@@ -67,7 +67,7 @@ def get_w3(chain_id: int, retries_per_url: int = 2, delay: float = 2.0) -> Web3:
             try:
                 print(f"[{chain_id}] Connecting via Web3 ({attempt}/{retries_per_url}): {url}")
                 w3 = Web3(Web3.HTTPProvider(url, request_kwargs={"timeout": 5}))
-                if w3.is_connected():
+                if is_rpc_working(url):
                     print(f"[{chain_id}] Connected to RPC: {url}")
                     return w3
                 else:

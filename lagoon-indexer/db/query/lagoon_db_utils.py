@@ -82,6 +82,18 @@ class LagoonDbUtils:
         if df.empty:
             raise ValueError(f"Silo not found for vault {vault_address} on chain {chain_id}")
         return df.iloc[0]["silo_address"]
+    
+    @staticmethod
+    def get_vaults_and_silos_from_factory(db: Database, chain_id: int) -> str:
+        query = """
+            SELECT vault_address, silo_address
+            FROM factory
+            WHERE chain_id = %s
+        """
+        df = db.frameResponse(query, (chain_id,))
+        if df.empty:
+            raise ValueError(f"No vaults or silos found for chain {chain_id}")
+        return df
 
     @staticmethod
     def update_last_processed_block(db: Database, vault_id: str, last_block: int, is_syncing: bool):

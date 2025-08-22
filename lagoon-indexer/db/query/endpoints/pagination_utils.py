@@ -164,14 +164,15 @@ class PaginationUtils:
             """
 
     @staticmethod
-    def get_vault_snapshots_count_query() -> str:
-        """Count query for vault snapshots."""
-        return """
+    def get_vault_snapshots_count_query(interval: str | None = None) -> str:
+        time_filter = f"AND e.event_timestamp >= NOW() - INTERVAL '{interval}'" if interval else ""
+        return f"""
             SELECT COUNT(*) AS count
             FROM vault_snapshots t
             JOIN vaults v ON t.vault_id = v.vault_id
-            WHERE t.vault_id = %s
-            AND v.chain_id = %s
+            JOIN events e ON t.event_id = e.event_id
+            WHERE v.chain_id = %s
+            {time_filter}
         """
 
     @staticmethod

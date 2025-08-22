@@ -4,14 +4,14 @@ from db.query.endpoints.lagoon_vault_snapshots import get_vault_snapshots
 
 router = APIRouter()
 
-@router.get("/lagoon/snapshots/test/{vault_id}")
+@router.get("/lagoon/snapshots/test")
 def read_vault_snapshots(
-    vault_id: str,
     chain_id: int = Query(480, description="Chain ID (default: 480 for Worldchain)"),
     offset: int = Query(0, ge=0, description="Offset for pagination. Must be >= 0."),
-    limit: int = Query(20, ge=1, le=100, description="Number of transactions to return per page. Max 100.")
+    limit: int = Query(20, ge=1, le=100, description="Number of transactions to return per page. Max 100."),
+    ranges: str = Query("all", description="Range of snapshots to return. Format: 24h | 7d | 1m | 6m | 1y | all")
 ):
-    result = get_vault_snapshots(vault_id, offset, limit, chain_id)
+    result = get_vault_snapshots(offset, limit, chain_id, ranges)
     return result
 
 @router.get("/lagoon/snapshots")
@@ -20,6 +20,7 @@ def read_vault_snapshots(
     chain_id: int = Query(480, description="Chain ID (default: 480 for Worldchain)"),
     offset: int = Query(0, ge=0, description="Offset for pagination. Must be >= 0."),
     limit: int = Query(20, ge=1, le=100, description="Number of transactions to return per page. Max 100."),
+    ranges: str = Query("all", description="Range of snapshots to return. Format: 24h | 7d | 1m | 6m | 1y | all")
 ):
-    result = get_vault_snapshots(current_user["vault_id"], offset, limit, chain_id)
+    result = get_vault_snapshots(offset, limit, chain_id, ranges)
     return result

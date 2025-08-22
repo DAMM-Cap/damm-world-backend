@@ -61,14 +61,14 @@ def get_data_query(table: str, owner_join_column: bool = False, offset: int = 0,
             LIMIT {limit}
         """
 
-def get_user_txs(address: str, offset: int, limit: int, chain_id: int, vault_address: str) -> Dict[str, Any]:
+def get_user_txs(address: str, offset: int, limit: int, chain_id: int) -> Dict[str, Any]:
     db = getEnvDb(os.getenv('DB_NAME'))
     lowercase_address = address.lower()
-    silo_address = LagoonDbUtils.get_silo_from_factory(db, vault_address, chain_id)
-    contract_addresses = [
-        vault_address.lower(),
-        silo_address.lower()
-    ]
+    contract_addresses = []
+    vaults_and_silos = LagoonDbUtils.get_vaults_and_silos_from_factory(db, chain_id)
+    for index, row in vaults_and_silos.iterrows():
+        contract_addresses.append(row['vault_address'].lower())
+        contract_addresses.append(row['silo_address'].lower())
 
     # Configure tables for pagination
     tables_config = {

@@ -164,14 +164,15 @@ class PaginationUtils:
             """
 
     @staticmethod
-    def get_vault_snapshots_count_query() -> str:
-        """Count query for vault snapshots."""
-        return """
+    def get_vault_snapshots_count_query(interval: str | None = None) -> str:
+        time_filter = f"AND e.event_timestamp >= NOW() - INTERVAL '{interval}'" if interval else ""
+        return f"""
             SELECT COUNT(*) AS count
             FROM vault_snapshots t
             JOIN vaults v ON t.vault_id = v.vault_id
-            WHERE t.vault_id = %s
-            AND v.chain_id = %s
+            JOIN events e ON t.event_id = e.event_id
+            WHERE v.chain_id = %s
+            {time_filter}
         """
 
     @staticmethod
@@ -186,9 +187,12 @@ class PaginationUtils:
     
     @staticmethod
     def get_integrated_position_count_query() -> str:
+        """
+        Count how many vaults exist for a given chain_id.
+        Used by PaginationUtils.get_custom_paginated_results.
+        """
         return """
-            SELECT COUNT(DISTINCT vr.vault_id) AS count
-            FROM vault_returns vr
-            WHERE vr.user_id = %s
-            AND vr.vault_id = %s
+        SELECT COUNT(*) AS count
+        FROM vaults v
+        WHERE v.chain_id = %s
         """

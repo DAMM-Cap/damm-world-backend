@@ -26,6 +26,8 @@ def get_vault_snapshots_data_query(offset: int = 0, limit: int = 20, interval: s
             t3.symbol as deposit_token_symbol,
             t2.address as vault_token_address,
             t3.address as deposit_token_address,
+            t2.decimals as vault_token_decimals,
+            t3.decimals as deposit_token_decimals,
             e.event_timestamp as event_timestamp
         FROM vault_snapshots t
         JOIN vaults v ON t.vault_id = v.vault_id

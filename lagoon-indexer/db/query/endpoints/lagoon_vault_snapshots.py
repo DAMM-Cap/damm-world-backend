@@ -19,7 +19,17 @@ def get_vault_snapshots_data_query(offset: int = 0, limit: int = 20, interval: s
 
     return f"""
         SELECT 
-            t.*,
+            t.event_id,
+            t.vault_id,
+            t.total_assets,
+            t.total_shares,
+            t.share_price,
+            t.management_fee,
+            t.performance_fee,
+            t.apy,
+            t.delta_hours,
+            (t.entrance_rate::numeric / 10000) AS entrance_rate,
+            (t.exit_rate::numeric / 10000) AS exit_rate,
             v.chain_id,
             v.name as vault_name,
             t2.symbol as vault_token_symbol,

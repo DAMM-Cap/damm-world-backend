@@ -65,6 +65,7 @@ def keeper_txs_handler(chain_id, pending):
     }]
     """
     try:
+        print(f"Keeper bot called for chain {chain_id}")
         for instance in pending:
             vault_address = instance["vault"]["vault_address"]
             status = instance["status"]
@@ -72,6 +73,10 @@ def keeper_txs_handler(chain_id, pending):
 
             if status == "syncing":
                 print(f"[{vault_address}] Indexer syncing: {message}")
+                continue
+
+            if status == "paused":
+                print(f"[{vault_address}] Keeper bot is not enabled: {message}")
                 continue
 
             if status == "error":

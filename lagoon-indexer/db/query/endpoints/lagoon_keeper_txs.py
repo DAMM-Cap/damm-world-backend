@@ -83,6 +83,14 @@ def get_keepers_pending_txs_metadata(chain_id: int = 480) -> Dict[str, Any]:
         LIMIT 1
     """
 
+    bot_enabled_query = """
+        SELECT keeper_bot_enabled
+        FROM factory
+        WHERE vault_address = %s
+        AND chain_id = %s
+        LIMIT 1
+    """
+
     vaults_txs = []
 
     vaults_df = db.frameResponse(vaults_query, (chain_id,))
@@ -97,6 +105,16 @@ def get_keepers_pending_txs_metadata(chain_id: int = 480) -> Dict[str, Any]:
             "valuationManager": row.price_oracle_address,
             "underlying_token_address": row.underlying_token_address,
         }
+
+        keeper_bot_enabled_df = db.frameResponse(bot_enabled_query, (vault["vault_address"], chain_id))
+        if keeper_bot_enabled_df.empty or not keeper_bot_enabled_df.iloc[0].keeper_bot_enabled:
+            vaults_txs.append({
+                "status": "paused",
+                "message": f"Keeper bot is not enabled for vault {vault['vault_address']}",
+                "vault": vault,
+                "vault_txs": {}
+            })
+            continue
 
         indexer_state_df = db.frameResponse(indexer_state_query, (vault_id,))
         if indexer_state_df.empty:
@@ -143,8 +161,6 @@ def get_keepers_pending_txs_metadata(chain_id: int = 480) -> Dict[str, Any]:
         redeem_df = db.frameResponse(redeem_query, (chain_id, vault_id))
         settled_deposit_df = db.frameResponse(settled_deposit_query, (chain_id, vault_id))
 
-        if deposit_df.empty and redeem_df.empty and settled_deposit_df.empty:
-            continue
         vault_txs = {
             "initialUpdate": initial_update_df.empty,
             "pendingDeposit": not deposit_df.empty,

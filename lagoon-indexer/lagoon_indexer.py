@@ -82,7 +82,7 @@ class EventFormatter:
         total_shares = Decimal(event['args']['totalSupply'])
         share_price = Decimal(total_assets / total_shares) if total_shares > 0 else Decimal(0)
         current_event_ts = LagoonDbDateUtils.get_datetime_from_str(event_data['event_timestamp'])
-        delta_hours, apy, management_fee, performance_fee = LagoonDbUtils.handle_vault_snapshot(
+        delta_hours, apy, management_fee, performance_fee, entrance_rate, exit_rate = LagoonDbUtils.handle_vault_snapshot(
             db, 
             vault_id, 
             total_assets, 
@@ -99,7 +99,9 @@ class EventFormatter:
             'management_fee': management_fee,
             'performance_fee': performance_fee,
             'apy': apy,
-            'delta_hours': delta_hours
+            'delta_hours': delta_hours,
+            'entrance_rate': entrance_rate,
+            'exit_rate': exit_rate
         }
         return event_data, settle_data, snapshot_data
 

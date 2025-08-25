@@ -69,8 +69,12 @@ CREATE TABLE IF NOT EXISTS factory (
   genesis_block_number BIGINT NOT NULL,
   vault_address VARCHAR(42) NOT NULL,
   silo_address VARCHAR(42) NOT NULL,
+  entrance_rate bps_type,
+  exit_rate bps_type,
   continue_indexing BOOLEAN NOT NULL,
+  keeper_bot_enabled BOOLEAN NOT NULL,
   created_at TIMESTAMP,
+  updated_at TIMESTAMP,
   PRIMARY KEY(chain_id, vault_address)
 );
 
@@ -125,6 +129,8 @@ CREATE TABLE IF NOT EXISTS vault_snapshots (
   performance_fee NUMERIC(78,18), -- Incentive fee on profits.
   apy NUMERIC(10,6), -- APY in the last delta_hours.
   delta_hours NUMERIC(10,6), -- Variation in hours for determining the apy.
+  entrance_rate bps_type, -- Entrance fee rate taken at snapshot time from factory.
+  exit_rate bps_type, -- Exit fee rate taken at snapshot time from factory.
   CONSTRAINT positive_values CHECK (total_assets>=0 AND total_shares>=0 AND share_price>=0)
 );
 

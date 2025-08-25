@@ -236,7 +236,32 @@ class LagoonDbUtils:
         return result
 
     @staticmethod
-    def handle_vault_snapshot(db: Database, vault_id: str, total_assets: Decimal, total_shares: Decimal, share_price: Decimal, current_event_ts: datetime) -> Tuple[Optional[Decimal], Optional[Decimal], Optional[Decimal], Optional[Decimal]]:
+    def get_vault_fees_from_factory(db: Database, vault_id: str) -> Tuple[Optional[Decimal], Optional[Decimal]]:
+        """
+        Get the vault fees from the factory for a given vault_id.
+        """
+        query = """
+        SELECT
+            f.entrance_rate AS entrance_rate,
+            f.exit_rate AS exit_rate
+        FROM vaults v
+        JOIN tokens t ON 
+            t.token_id = v.vault_token_id 
+            AND t.chain_id = v.chain_id
+        JOIN factory f ON 
+            f.chain_id = v.chain_id 
+            AND f.vault_address = t.address
+        WHERE v.vault_id = %s
+        """
+        result = db.queryResponse(query, (vault_id,))
+
+        if result and 'entrance_rate' in result[0] and 'exit_rate' in result[0]:
+            return result[0]['entrance_rate'], result[0]['exit_rate']
+        else:
+            return None, None
+    
+    @staticmethod
+    def handle_vault_snapshot(db: Database, vault_id: str, total_assets: Decimal, total_shares: Decimal, share_price: Decimal, current_event_ts: datetime) -> Tuple[Optional[Decimal], Optional[Decimal], Optional[Decimal], Optional[Decimal], Optional[Decimal], Optional[Decimal]]:
         """
         Handle the vault snapshot for a given vault_id.
         """
@@ -264,4 +289,7 @@ class LagoonDbUtils:
             share_price,
             current_event_ts
         )
-        return delta_hours, apy, management_fee, performance_fee
+
+        entrance_rate, exit_rate = LagoonDbUtils.get_vault_fees_from_factory(db, vault_id)
+
+        return delta_hours, apy, management_fee, performance_fee, entrance_rate, exit_rate

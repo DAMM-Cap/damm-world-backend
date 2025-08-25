@@ -18,7 +18,7 @@ def run_bot(chain_id, api_url):
         pending = fetch_keeper_txs(api_url, chain_id)
         vaults_txs = pending.get("vaults_txs", [])
         if len(vaults_txs) == 0:
-            print("No pending transactions found")
+            print(f"No vaults found for chain {chain_id}")
             return
 
         keeper_txs_handler(chain_id, vaults_txs)

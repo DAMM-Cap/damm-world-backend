@@ -25,6 +25,7 @@ def get_integrated_position_data_query(offset: int = 0, limit: int = 20) -> str:
             under_token.address  AS token_address,
             under_token.symbol   AS token_symbol,
             under_token.decimals AS token_decimals,
+            v.fee_receiver_address  AS fee_receiver_address,
             v.status             AS vault_status,
             v.name               AS vault_name
         FROM vaults v
@@ -37,7 +38,9 @@ def get_integrated_position_data_query(offset: int = 0, limit: int = 20) -> str:
         SELECT DISTINCT ON (vs.vault_id)
             vs.vault_id, vs.total_assets, vs.total_shares,
             vs.apy, vs.share_price, ev.event_timestamp,
-            vs.performance_fee, vs.management_fee
+            vs.performance_fee, vs.management_fee,
+            (vs.entrance_rate::numeric / 10000) AS entrance_rate,
+            (vs.exit_rate::numeric / 10000) AS exit_rate
         FROM vault_snapshots vs
         JOIN events ev ON ev.event_id = vs.event_id
         JOIN static_vault_data sv ON sv.vault_id = vs.vault_id
@@ -85,6 +88,7 @@ def get_integrated_position_data_query(offset: int = 0, limit: int = 20) -> str:
         sv.token_address,
         sv.token_symbol,
         sv.token_decimals,
+        sv.fee_receiver_address,
         sv.vault_status,
         sv.vault_name,
         COALESCE(ls.total_assets, 0) AS latest_tvl,
@@ -101,7 +105,9 @@ def get_integrated_position_data_query(offset: int = 0, limit: int = 20) -> str:
         COALESCE(sr.total_settled_redeem, 0) AS settled_redeems,
         COALESCE(ur.total_withdraw, 0) AS completed_redeems,
         COALESCE(ls.performance_fee, 0) AS performance_fee,
-        COALESCE(ls.management_fee, 0) AS management_fee
+        COALESCE(ls.management_fee, 0) AS management_fee,
+        COALESCE(ls.entrance_rate, 0) AS entrance_rate,
+        COALESCE(ls.exit_rate, 0) AS exit_rate
     FROM static_vault_data sv
     LEFT JOIN latest_snapshots  ls  ON ls.vault_id  = sv.vault_id
     LEFT JOIN snapshots_12h_ago s12 ON s12.vault_id = sv.vault_id

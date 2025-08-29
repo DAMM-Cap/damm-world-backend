@@ -58,12 +58,17 @@ services:
     #command: ["python", "indexer.py", "1", "10", "2000", "1", "60"] ## Run on Mainnet
     #command: ["python", "indexer.py", "11155111", "10", "2000", "1", "60"] ## Run on Sepolia
     command: [
+        "watchmedo",
+        "auto-restart",
+        "--patterns=*.py",
+        "--recursive",
+        "--",
         "python",
         "indexer.py",
         "--sleep_time",
         "10",
         "--range",
-        "2000",
+        "3000",
         "--real_time",
         "1",
         "--run_time",

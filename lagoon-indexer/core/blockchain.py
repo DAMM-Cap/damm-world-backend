@@ -57,12 +57,12 @@ class Blockchain:
         decode_return = self.node.codec.decode(abi_types, output_data[1])
         return decode_return[0] if len(decode_return) == 1 else decode_return
 
-    def get_logs(self, from_block: int, to_block: int, lagoon_address: str, event_topic: bytes):
+    def get_logs(self, from_block: int, to_block: int, lagoon_address: str, event_topics: list):
         return self.node.eth.get_logs({
             "fromBlock": from_block,
             "toBlock": to_block,
             "address": lagoon_address,
-            "topics": [event_topic]
+            "topics": [event_topics]
         })
     
     def get_erc20_contract(self, address: str):

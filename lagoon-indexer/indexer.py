@@ -56,25 +56,31 @@ async def run_indexer(
     start_time = time.time()
     print(f"[{chain_id}] Indexer started.")
 
-    while time.time() - start_time < run_time:
+    # Run continuously instead of for a fixed time
+    while True:
         try:
             if await indexer.fetcher_loop() == 1:
-                break
+                # If up to date, sleep briefly before checking again
+                if real_time and sleep_time > 0:
+                    await asyncio.sleep(sleep_time)
+                continue
         except Exception as e:
             print(f"[{chain_id}] Error in fetcher loop: {e}")
             traceback.print_exc()
             print(f"[{chain_id}] Sleeping {sleep_time}s before retrying...")
             await asyncio.sleep(sleep_time)
 
-    print(f"[{chain_id}] Indexer exited after {time.time() - start_time:.2f}s.")
-
 def make_completion_handler(chain_id: int, vault: str):
     def handler(t):
-        exc = t.exception()
-        if exc:
-            print(f"[{chain_id}] Indexer task for {vault} raised an exception: {exc}")
+        if t.cancelled():
+            print(f"[{chain_id}] Indexer task for {vault} was cancelled")
         else:
-            print(f"[{chain_id}] Indexer task for {vault} completed successfully")
+            exc = t.exception()
+            if exc:
+                print(f"[{chain_id}] Indexer task for {vault} raised an exception: {exc}")
+            else:
+                print(f"[{chain_id}] Indexer task for {vault} completed successfully")
+        print(f"[{chain_id}] Task done() status: {t.done()}")
     return handler
 
 async def launch_forever(
@@ -85,14 +91,39 @@ async def launch_forever(
     run_time: int
 ) -> None:
     print(f"[{chain_id}] Launching indexer loop...")
+    running_tasks = {}  # Track running tasks by vault address
+    
     while True:
         try:
             db = getEnvDb(os.getenv('DB_NAME'))
             deployments = LagoonDbUtils.get_active_deployments_from_chain_id(db, chain_id)
+            
+            # Get current active vault addresses
+            active_vaults = {deployment["vault_address"] for deployment in deployments}
+            
+            # Stop tasks for vaults that are no longer active
+            vaults_to_stop = set(running_tasks.keys()) - active_vaults
+            for vault in vaults_to_stop:
+                if vault in running_tasks and not running_tasks[vault].done():
+                    print(f"[{chain_id}] Stopping indexer for {vault} (no longer active)")
+                    running_tasks[vault].cancel()
+                del running_tasks[vault]
 
             for deployment in deployments:
-                vault = deployment["vault_address"]            
+                vault = deployment["vault_address"]
+                
+                # Check if we already have a running task for this vault
+                if vault in running_tasks:
+                    if running_tasks[vault].done():
+                        # Task completed, remove it from tracking
+                        print(f"[{chain_id}] Indexer for {vault} completed, removing from tracking")
+                        del running_tasks[vault]
+                    else:
+                        print(f"[{chain_id}] Indexer for {vault} is already running, skipping...")
+                        continue
+                
                 print(f"[{chain_id}] Launching indexer for {vault}")
+                print(f"[{chain_id}] Current running tasks: {list(running_tasks.keys())}")
             
                 # Launch indexer as background task
                 task = asyncio.create_task(
@@ -109,6 +140,8 @@ async def launch_forever(
                 )
                 
                 task.add_done_callback(make_completion_handler(chain_id, vault))
+                running_tasks[vault] = task
+                print(f"[{chain_id}] Added task for {vault}, total running tasks: {len(running_tasks)}")
 
         except Exception as e:
             print(f"[{chain_id}] Indexer launcher crashed: {e}")

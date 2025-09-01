@@ -273,7 +273,7 @@ class LagoonDbUtils:
         )
 
         if prev_snapshot_ts is None:
-            return None, None, None, None
+            return None, None, None, None, None, None
         
         management_fee = LagoonDbUtils.get_management_fee(
             db,

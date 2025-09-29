@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from app.auth.auth import router as auth_router
 from app.endpoints.get_user_txs import router as get_user_txs_router

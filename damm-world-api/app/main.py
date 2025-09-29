@@ -11,10 +11,15 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="DAMM World API", version="0.1.0")
 
+allowed_origins_urls = []
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "")
+if allowed_origins:
+    allowed_origins_urls = [u.strip() for u in allowed_origins.split(",") if u.strip()]
+
 # Allow frontend (localhost:3000) to access the API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://damm-world.netlify.app", "http://localhost:3000"],
+    allow_origins=allowed_origins_urls,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

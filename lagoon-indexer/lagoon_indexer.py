@@ -6,7 +6,6 @@ import asyncio
 import traceback
 from typing import List, Dict, Tuple
 from datetime import datetime
-import logging
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -18,13 +17,6 @@ from eth_utils import event_abi_to_log_topic
 from utils.indexer_status import is_up_to_date, get_indexer_status
 
 from lagoon_event_processor import EventProcessor
-
-# Configure logging
-""" logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__) """
 
 
 # -----------------------------
@@ -94,9 +86,6 @@ class LagoonIndexer:
             
             # Get logs for all event topics
             logs = self.blockchain.get_logs(from_block, to_block, self.lagoon, event_topics)
-            """ print(f"Logs: {logs}")
-            print(f"Event objects: {event_objects}")
-            print(f"Event topics: {event_topics}") """
             
             # Process each log with the appropriate event object
             events = []
@@ -125,7 +114,6 @@ class LagoonIndexer:
             return events
         except Exception as e:
             print(f"Error fetching events: {e}")
-            #logger.error(f"Error fetching events: {e}")
             raise
 
 

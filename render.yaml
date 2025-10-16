@@ -29,7 +29,7 @@ services:
       - key: DATABASE_URL
         sync: true
       - key: SUPPORTED_CHAINS
-        value: "11155111,8453"
+        value: "11155111,8453,10"
 
   - type: worker
     name: keeper-bot
@@ -47,7 +47,7 @@ services:
       - key: API_URL
         value: https://damm-api.onrender.com
       - key: SUPPORTED_CHAINS
-        value: "11155111,8453"
+        value: "11155111,8453,10"
 
   - type: worker
     name: lagoon-migrate

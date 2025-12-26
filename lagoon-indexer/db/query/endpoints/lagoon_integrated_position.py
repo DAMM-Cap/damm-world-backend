@@ -27,7 +27,9 @@ def get_integrated_position_data_query(offset: int = 0, limit: int = 20) -> str:
             under_token.decimals AS token_decimals,
             v.fee_receiver_address  AS fee_receiver_address,
             v.status             AS vault_status,
-            v.name               AS vault_name
+            v.name               AS vault_name,
+            v.management_rate   AS management_rate,
+            v.performance_rate  AS performance_rate
         FROM vaults v
         JOIN tokens under_token ON v.deposit_token_id = under_token.token_id
         JOIN tokens share_token ON v.vault_token_id   = share_token.token_id
@@ -39,8 +41,8 @@ def get_integrated_position_data_query(offset: int = 0, limit: int = 20) -> str:
             vs.vault_id, vs.total_assets, vs.total_shares,
             vs.apy, vs.share_price, ev.event_timestamp,
             vs.performance_fee, vs.management_fee,
-            (vs.entrance_rate::numeric / 10000) AS entrance_rate,
-            (vs.exit_rate::numeric / 10000) AS exit_rate
+            vs.entrance_rate AS entrance_rate,
+            vs.exit_rate AS exit_rate
         FROM vault_snapshots vs
         JOIN events ev ON ev.event_id = vs.event_id
         JOIN static_vault_data sv ON sv.vault_id = vs.vault_id
@@ -106,6 +108,8 @@ def get_integrated_position_data_query(offset: int = 0, limit: int = 20) -> str:
         COALESCE(ur.total_withdraw, 0) AS completed_redeems,
         COALESCE(ls.performance_fee, 0) AS performance_fee,
         COALESCE(ls.management_fee, 0) AS management_fee,
+        COALESCE(sv.management_rate, 0) AS management_rate,
+        COALESCE(sv.performance_rate, 0) AS performance_rate,
         COALESCE(ls.entrance_rate, 0) AS entrance_rate,
         COALESCE(ls.exit_rate, 0) AS exit_rate
     FROM static_vault_data sv

@@ -46,6 +46,7 @@ def drop_all_schema_objects():
         chains,
         indexer_state,
         bot_status,
+        vault_metadata,
         factory,
     CASCADE;
 

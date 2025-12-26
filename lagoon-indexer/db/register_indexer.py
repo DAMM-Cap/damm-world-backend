@@ -101,11 +101,22 @@ def insert_vault(db, chain_id, lagoon_address):
 
     name = vault_contract.functions.name().call()
     
+    # Fetch fee rates from the contract
+    # feeRates() returns a tuple: (managementRate: uint16, performanceRate: uint16)
+    try:
+        fee_rates = vault_contract.functions.feeRates().call()
+        # fee_rates is a tuple: (managementRate, performanceRate)
+        management_rate = int(fee_rates[0])  # managementRate is uint16
+        performance_rate = int(fee_rates[1])  # performanceRate is uint16
+        print(f"Fetched fee rates from contract: management_rate={management_rate}, performance_rate={performance_rate}")
+    except Exception as e:
+        print(f"Warning: Could not fetch fee rates from contract {lagoon_address}: {e}. Defaulting to 0.")
+        management_rate = 0
+        performance_rate = 0
+    
     strategy_type = 'yield_farming'
     status = 'open'
     total_assets = 0
-    management_rate = 0
-    performance_rate = 0
     high_water_mark = 0
     
     min_deposit = 0 #TODO

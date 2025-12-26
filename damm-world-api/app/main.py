@@ -8,6 +8,7 @@ from app.endpoints.get_user_position import router as get_user_position_router
 from app.endpoints.get_integrated_position import router as get_integrated_position_router
 from app.endpoints.get_keeper_txs import router as get_keeper_txs_router
 from app.endpoints.post_keeper_status import router as post_keeper_status_router
+from app.endpoints.get_vault_metadata import router as get_vault_metadata_router
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -36,6 +37,7 @@ app.include_router(get_user_position_router)
 app.include_router(get_integrated_position_router)
 app.include_router(get_keeper_txs_router)
 app.include_router(post_keeper_status_router)
+app.include_router(get_vault_metadata_router)
 
 # Root endpoint for checking if the API is running
 @app.get("/")

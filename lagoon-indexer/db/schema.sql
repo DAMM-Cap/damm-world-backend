@@ -231,6 +231,14 @@ CREATE TABLE IF NOT EXISTS bot_status (
   updated_at TIMESTAMP
 );
 
+-- Vault Metadata
+CREATE TABLE IF NOT EXISTS vault_metadata (
+  vault_id UUID PRIMARY KEY REFERENCES vaults(vault_id) ON DELETE CASCADE,
+  metadata JSONB,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_vaults_chain_status ON vaults(chain_id, status);
 CREATE INDEX IF NOT EXISTS idx_events_vault_type_time ON events(vault_id, event_type, event_timestamp DESC);
@@ -254,3 +262,4 @@ CREATE INDEX IF NOT EXISTS idx_settlements_type_epoch ON settlements(settlement_
 CREATE INDEX IF NOT EXISTS idx_vaults_vault_token_id ON vaults(vault_token_id);
 CREATE INDEX IF NOT EXISTS idx_tokens_address_chain_id ON tokens(address, chain_id);
 CREATE INDEX IF NOT EXISTS idx_factory_vault_address_chain_id ON factory(vault_address, chain_id);
+CREATE INDEX IF NOT EXISTS idx_vault_metadata_vault_id ON vault_metadata(vault_id);

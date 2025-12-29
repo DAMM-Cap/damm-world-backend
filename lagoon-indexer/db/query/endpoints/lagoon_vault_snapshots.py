@@ -24,8 +24,8 @@ def get_vault_snapshots_data_query(offset: int = 0, limit: int = 20, interval: s
             t.total_assets,
             t.total_shares,
             t.share_price,
-            t.management_fee,
-            t.performance_fee,
+            COALESCE(t.management_fee, 0) as management_fee,
+            COALESCE(t.performance_fee, 0) as performance_fee,
             t.apy,
             t.delta_hours,
             t.entrance_rate AS entrance_rate,
@@ -71,5 +71,12 @@ def get_vault_snapshots(offset: int, limit: int, chain_id: int, ranges: str) -> 
         limit=limit,
         result_key="snapshots"
     )
+    
+    # Additional safeguard: Ensure null fees become 0 (defense in depth)
+    for snapshot in result.get("snapshots", []):
+        if snapshot.get("management_fee") is None:
+            snapshot["management_fee"] = 0
+        if snapshot.get("performance_fee") is None:
+            snapshot["performance_fee"] = 0
     
     return result
